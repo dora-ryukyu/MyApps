@@ -1,0 +1,8 @@
+{
+  "id": "sample-counter",
+  "name": "カウンター",
+  "description": "シンプルなカウンターアプリ。ボタンで数値を増減できます。",
+  "icon": "calculator",
+  "color": "#3b82f6",
+  "tags": ["ツール", "サンプル"]
+}

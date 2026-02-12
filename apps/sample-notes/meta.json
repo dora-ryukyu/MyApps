@@ -1,0 +1,8 @@
+{
+  "id": "sample-notes",
+  "name": "メモ帳",
+  "description": "ブラウザ上で動作するシンプルなメモ帳。LocalStorageに自動保存されます。",
+  "icon": "file-text",
+  "color": "#10b981",
+  "tags": ["生産性", "サンプル"]
+}

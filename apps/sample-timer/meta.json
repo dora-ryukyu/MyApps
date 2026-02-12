@@ -1,0 +1,8 @@
+{
+  "id": "sample-timer",
+  "name": "タイマー",
+  "description": "カウントダウンタイマー。作業時間の管理に便利です。",
+  "icon": "timer",
+  "color": "#f59e0b",
+  "tags": ["ツール", "生産性"]
+}

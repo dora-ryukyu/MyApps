@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タイマー — MyApps</title>
+    <link rel="stylesheet" href="../../shared/base.css">
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');</script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            gap: var(--sp-6);
+        }
+
+        .back-to-hub {
+            position: fixed;
+            top: var(--sp-4);
+            left: var(--sp-4);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            color: var(--c-text-2);
+            text-decoration: none;
+            font-size: var(--text-sm);
+            font-weight: 500;
+            padding: var(--sp-2) var(--sp-3);
+            border-radius: var(--r);
+            transition: color var(--duration-fast), background var(--duration-fast);
+        }
+
+        .back-to-hub:hover {
+            color: var(--c-text);
+            background: var(--c-surface-alt);
+        }
+
+        .timer-app {
+            text-align: center;
+            background: var(--c-surface-solid);
+            padding: var(--sp-10);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--c-border);
+        }
+
+        .timer-app h1 {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            margin-bottom: var(--sp-4);
+        }
+
+        .display {
+            font-size: 4rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            margin: var(--sp-4) 0;
+            color: var(--c-text);
+            letter-spacing: -0.02em;
+        }
+
+        .controls {
+            display: flex;
+            gap: var(--sp-3);
+            justify-content: center;
+        }
+
+        .btn {
+            font-family: var(--font);
+            font-size: var(--text-base);
+            font-weight: 600;
+            padding: var(--sp-3) var(--sp-5);
+            border: none;
+            border-radius: var(--r);
+            cursor: pointer;
+            transition: all var(--duration) var(--ease-default);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--c-focus-ring);
+            outline-offset: 2px;
+        }
+
+        .btn-primary {
+            background: var(--c-accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--c-accent-hover);
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--c-surface-alt);
+            color: var(--c-text-2);
+            border: 1px solid var(--c-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--c-border);
+            color: var(--c-text);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../../" class="back-to-hub" aria-label="ハブに戻る">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+        </svg>
+        MyApps
+    </a>
+
+    <div class="timer-app">
+        <h1>タイマー</h1>
+        <div class="display" id="display">05:00</div>
+        <div class="controls">
+            <button class="btn btn-primary" id="start">開始</button>
+            <button class="btn btn-secondary" id="reset">リセット</button>
+        </div>
+    </div>
+
+    <script>
+        let total = 300, remaining = 300, interval = null;
+        const $display = document.getElementById('display');
+        const $start = document.getElementById('start');
+
+        function fmt(s) {
+            const m = Math.floor(s / 60);
+            return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+        }
+
+        $start.addEventListener('click', () => {
+            if (interval) { clearInterval(interval); interval = null; $start.textContent = '開始'; return; }
+            $start.textContent = '停止';
+            interval = setInterval(() => {
+                remaining--;
+                $display.textContent = fmt(remaining);
+                if (remaining <= 0) { clearInterval(interval); interval = null; $start.textContent = '開始'; }
+            }, 1000);
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            clearInterval(interval); interval = null;
+            remaining = total;
+            $display.textContent = fmt(remaining);
+            $start.textContent = '開始';
+        });
+    </script>
+</body>
+
+</html>

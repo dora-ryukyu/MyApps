@@ -1,0 +1,55 @@
+name: Generate Registry
+
+on:
+  push:
+    paths:
+      - "apps/**/meta.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate registry.json
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          const appsDir = path.join(__dirname, 'apps');
+          const apps = [];
+
+          if (fs.existsSync(appsDir)) {
+            for (const dir of fs.readdirSync(appsDir, { withFileTypes: true })) {
+              if (!dir.isDirectory()) continue;
+              const meta = path.join(appsDir, dir.name, 'meta.json');
+              if (fs.existsSync(meta)) {
+                apps.push(dir.name);
+              }
+            }
+          }
+
+          apps.sort();
+
+          const registry = {
+            apps,
+            generatedAt: new Date().toISOString()
+          };
+
+          fs.writeFileSync(
+            path.join(__dirname, 'registry.json'),
+            JSON.stringify(registry, null, 2) + '\n'
+          );
+
+          console.log('Generated registry.json with', apps.length, 'apps:', apps.join(', '));
+          "
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto-generate registry.json"
+          file_pattern: registry.json

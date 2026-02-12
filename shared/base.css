@@ -1,0 +1,196 @@
+/* ============================================
+   MyApps — Shared Design Tokens & Reset
+   ============================================
+   各アプリが読み込む共通ファイル。
+   ここにあるのはトークン（CSS変数）と最小限リセットのみ。
+   コンポーネントスタイルは含めない。
+
+   使い方:
+     <link rel="stylesheet" href="../../shared/base.css">
+
+   各アプリはトークンを自由に参照・オーバーライドできる。
+   使わなくても構わない。
+   ============================================ */
+
+/* --- Minimal Reset --- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Font --- */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+
+/* --- Design Tokens (Light) --- */
+:root {
+  color-scheme: light;
+
+  /* --- Typography --- */
+  --font: 'DM Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --leading: 1.6;
+  --leading-tight: 1.3;
+
+  /* --- Colors: Base --- */
+  --c-bg: #f5f7fa;
+  --c-surface: rgba(255, 255, 255, 0.7);
+  --c-surface-solid: #ffffff;
+  --c-surface-alt: #f0f2f5;
+
+  /* --- Colors: Text --- */
+  --c-text: #1e293b;
+  --c-text-2: #475569;
+  --c-text-3: #94a3b8;
+
+  /* --- Colors: Accent --- */
+  --c-accent: #3b82f6;
+  --c-accent-hover: #2563eb;
+  --c-accent-soft: rgba(59, 130, 246, 0.08);
+  --c-accent-glow: rgba(59, 130, 246, 0.5);
+
+  /* --- Colors: Semantic --- */
+  --c-success: #10b981;
+  --c-warning: #f59e0b;
+  --c-error: #ef4444;
+  --c-info: #3b82f6;
+
+  /* --- Colors: Border --- */
+  --c-border: rgba(226, 232, 240, 0.8);
+  --c-border-light: rgba(255, 255, 255, 0.6);
+  --c-focus-ring: rgba(59, 130, 246, 0.4);
+
+  /* --- Spacing Scale (4px base) --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* --- Radius --- */
+  --r-sm: 4px;
+  --r: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02);
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -1px rgba(0,0,0,0.02);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -2px rgba(0,0,0,0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.06), 0 10px 10px -5px rgba(0,0,0,0.02);
+
+  /* --- Transitions --- */
+  --ease-default: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --duration-slow: 300ms;
+
+  /* --- Glass --- */
+  --glass: blur(12px) saturate(180%);
+
+  /* --- Layout --- */
+  --w-page: 1000px;
+}
+
+/* --- Design Tokens (Dark) --- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-bg: #0f1115;
+  --c-surface: rgba(20, 22, 28, 0.6);
+  --c-surface-solid: #19191d;
+  --c-surface-alt: #222228;
+
+  --c-text: #f1f5f9;
+  --c-text-2: #cbd5e1;
+  --c-text-3: #64748b;
+
+  --c-accent: #60a5fa;
+  --c-accent-hover: #93bbfd;
+  --c-accent-soft: rgba(96, 165, 250, 0.1);
+  --c-accent-glow: rgba(96, 165, 250, 0.4);
+
+  --c-border: rgba(255, 255, 255, 0.12);
+  --c-border-light: rgba(255, 255, 255, 0.06);
+  --c-focus-ring: rgba(96, 165, 250, 0.4);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 4px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.3);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    color-scheme: dark;
+
+    --c-bg: #0f1115;
+    --c-surface: rgba(20, 22, 28, 0.6);
+    --c-surface-solid: #19191d;
+    --c-surface-alt: #222228;
+
+    --c-text: #f1f5f9;
+    --c-text-2: #cbd5e1;
+    --c-text-3: #64748b;
+
+    --c-accent: #60a5fa;
+    --c-accent-hover: #93bbfd;
+    --c-accent-soft: rgba(96, 165, 250, 0.1);
+    --c-accent-glow: rgba(96, 165, 250, 0.4);
+
+    --c-border: rgba(255, 255, 255, 0.12);
+    --c-border-light: rgba(255, 255, 255, 0.06);
+    --c-focus-ring: rgba(96, 165, 250, 0.4);
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow: 0 4px 6px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.3);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.4);
+  }
+}
+
+/* --- Base Styles (minimal, non-intrusive) --- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: var(--leading);
+  color: var(--c-text);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Accessibility Utilities --- */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
