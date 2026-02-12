@@ -24,7 +24,7 @@
 .app-header-inner {
   max-width: var(--w-page, 1000px);
   margin: 0 auto;
-  padding: var(--sp-3) var(--sp-8);
+  padding: var(--sp-4) var(--sp-8);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -40,21 +40,27 @@
 }
 
 .app-header-hub {
-  display: inline-flex;
+  /* Hubのロゴ (.header-brand) とスタイルを完全に一致させる */
+  padding: 0;
+  background: transparent;
+  
+  display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 12px; /* Hubのgapにあわせる (Hubは12px, Appはvar(--sp-2)=8pxだった) */
   text-decoration: none;
-  color: var(--c-text-2);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--r-sm);
-  flex-shrink: 0;
-  transition: color var(--duration-fast), background var(--duration-fast);
+  color: var(--c-text); /* Hubはvar(--c-text), Appはtext-2だった */
+  
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em; /* Hubにあわせる */
+  
+  transition: opacity 200ms;
 }
+
 .app-header-hub:hover {
+  opacity: 0.8;
   color: var(--c-text);
-  background: var(--c-accent-soft);
+  background: transparent;
 }
 .app-header-hub:focus-visible {
   outline: 2px solid var(--c-focus-ring);
@@ -65,18 +71,29 @@
   color: var(--c-accent);
 }
 
+.app-header-hub-label {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, var(--c-text) 0%, var(--c-text-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .app-header-sep {
   width: 1px;
-  height: 16px;
+  height: 24px;
   background: var(--c-border);
   flex-shrink: 0;
+  margin: 0 4px;
 }
 
 /* --- アプリ情報 --- */
 .app-header-app {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 12px;
   min-width: 0;
 }
 
@@ -85,20 +102,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--r-sm);
   color: var(--app-color, var(--c-accent));
   background: var(--app-color-soft, var(--c-accent-soft));
 }
 
 .app-header-name {
-  font-size: var(--text-base);
-  font-weight: 600;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 700;
   color: var(--c-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 /* --- アクション側（右） --- */
@@ -113,18 +132,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--c-border);
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--c-border-strong);
   border-radius: var(--r);
-  background: transparent;
+  background: var(--c-surface-card);
   color: var(--c-text-2);
   cursor: pointer;
   transition: color var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast);
 }
 .app-header .btn-icon:hover {
   color: var(--c-text);
-  background: var(--c-accent-soft);
+  background: var(--c-surface-hover);
   border-color: var(--c-accent);
 }
 .app-header .btn-icon:focus-visible {

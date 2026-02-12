@@ -41,6 +41,8 @@
   /* --- Colors: Base --- */
   --c-bg: #f5f7fa;
   --c-surface: rgba(255, 255, 255, 0.7);
+  --c-surface-card: rgba(255, 255, 255, 0.85);
+  --c-surface-hover: rgba(255, 255, 255, 0.95);
   --c-surface-solid: #ffffff;
   --c-surface-alt: #f0f2f5;
 
@@ -63,6 +65,7 @@
 
   /* --- Colors: Border --- */
   --c-border: rgba(226, 232, 240, 0.8);
+  --c-border-strong: rgba(226, 232, 240, 0.8);
   --c-border-light: rgba(255, 255, 255, 0.6);
   --c-focus-ring: rgba(59, 130, 246, 0.4);
 
@@ -101,7 +104,7 @@
   --glass: blur(12px) saturate(180%);
 
   /* --- Layout --- */
-  --w-page: 1000px;
+  --w-page: 1280px;
 }
 
 /* --- Design Tokens (Dark) --- */
@@ -110,6 +113,8 @@
 
   --c-bg: #0f1115;
   --c-surface: rgba(20, 22, 28, 0.6);
+  --c-surface-card: rgba(30, 32, 40, 0.6);
+  --c-surface-hover: rgba(40, 42, 50, 0.8);
   --c-surface-solid: #19191d;
   --c-surface-alt: #222228;
 
@@ -123,6 +128,7 @@
   --c-accent-glow: rgba(96, 165, 250, 0.4);
 
   --c-border: rgba(255, 255, 255, 0.12);
+  --c-border-strong: rgba(255, 255, 255, 0.12);
   --c-border-light: rgba(255, 255, 255, 0.06);
   --c-focus-ring: rgba(96, 165, 250, 0.4);
 
@@ -138,6 +144,8 @@
 
     --c-bg: #0f1115;
     --c-surface: rgba(20, 22, 28, 0.6);
+    --c-surface-card: rgba(30, 32, 40, 0.6);
+    --c-surface-hover: rgba(40, 42, 50, 0.8);
     --c-surface-solid: #19191d;
     --c-surface-alt: #222228;
 
@@ -151,6 +159,7 @@
     --c-accent-glow: rgba(96, 165, 250, 0.4);
 
     --c-border: rgba(255, 255, 255, 0.12);
+    --c-border-strong: rgba(255, 255, 255, 0.12);
     --c-border-light: rgba(255, 255, 255, 0.06);
     --c-focus-ring: rgba(96, 165, 250, 0.4);
 
@@ -174,6 +183,14 @@ body {
   background: var(--c-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  min-height: 100vh;
+  /* 背景メッシュグラデーション (全アプリ共通) */
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
 /* --- Reduced Motion --- */
