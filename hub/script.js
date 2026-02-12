@@ -88,20 +88,40 @@
   /* ---------- Data ---------- */
   async function loadApps() {
     try {
+      console.log('Fetching registry.json...');
       const res = await fetch('registry.json');
-      if (!res.ok) throw new Error(res.status);
+      if (!res.ok) throw new Error(`Failed to fetch registry.json: ${res.status}`);
+      
       const reg = await res.json();
+      console.log('Registry loaded:', reg);
+
+      if (!reg.apps || !reg.apps.length) {
+        console.warn('Registry is empty');
+        apps = [];
+        return;
+      }
+
       const metas = await Promise.all(
         reg.apps.map(async (id) => {
           try {
-            const r = await fetch(`apps/${id}/meta.json`);
-            return r.ok ? await r.json() : null;
-          } catch { return null; }
+            const url = `apps/${id}/meta.json`;
+            const r = await fetch(url);
+            if (!r.ok) {
+              console.warn(`Failed to fetch ${url}: ${r.status}`);
+              return null;
+            }
+            const data = await r.json();
+            return data;
+          } catch (e) {
+            console.warn(`Error loading app ${id}:`, e);
+            return null;
+          }
         })
       );
       apps = metas.filter(Boolean);
+      console.log('Apps loaded:', apps.length, apps);
     } catch (e) {
-      console.error('Failed to load apps:', e);
+      console.error('Critical error in loadApps:', e);
       apps = [];
     }
   }
