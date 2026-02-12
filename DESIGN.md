@@ -188,11 +188,10 @@ select:focus-visible {
 - `data-theme="light"` — 常にライト
 - `data-theme="dark"` — 常にダーク
 
-### 各アプリでのテーマ初期化（必須）
-
-Hub で選択されたテーマは `localStorage` に保存される。各アプリは `<head>` 内で以下のスクリプトを実行し、Hub と同じテーマを適用する:
+### 各アプリの `<head>` テンプレート（必須）
 
 ```html
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="../../shared/base.css" />
 <script>
   document.documentElement.setAttribute(
@@ -202,7 +201,9 @@ Hub で選択されたテーマは `localStorage` に保存される。各アプ
 </script>
 ```
 
-> **重要**: このスクリプトは CSS の後、`<style>` タグの前に配置する。これにより FOUC（Flash of Unstyled Content）を防げる。
+- **favicon**: アプリ固有の SVG favicon（`meta.json` の `icon` + `color` に対応する Lucide アイコンを同ディレクトリに `favicon.svg` として配置）
+- **base.css**: 共通デザイントークンを読み込み
+- **テーマ初期化**: Hub で選択したテーマを `localStorage` から読み取り適用（FOUC 防止のため CSS 直後に配置）
 
 ### 実装パターン
 
@@ -289,6 +290,7 @@ MyApps/
 ├── apps/
 │   ├── my-app/
 │   │   ├── index.html          # base.css を読み込む
+│   │   ├── favicon.svg         # アプリ固有 favicon
 │   │   ├── style.css           # アプリ固有スタイル
 │   │   ├── script.js
 │   │   └── meta.json           # Hub に表示するメタ情報
