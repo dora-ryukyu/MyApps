@@ -266,6 +266,66 @@ function toggleTheme() {
 
 ---
 
+## ローディング画面と重いリソースの扱い (`shared/loader.css`)
+
+初期ロードに時間がかかる、または大容量のダウンロード（50MB以上目安）が必要なアプリは、**統一されたローディング画面と同意フロー**を実装する。
+
+### 1. 同意画面 (Consent State)
+
+ユーザーの予期しない大量通信を防ぐため、大容量モデルのダウンロード前には必ず同意を求める。
+
+- **必須要素**: アプリ名、アイコン、ダウンロードサイズ（概算）、開始ボタン
+- **ボタン**: 「モデルをダウンロードして開始」など、アクションを明示する
+
+### 2. ローディング画面 (Loading State)
+
+同意後はプログレスバー付きのローディング画面を表示する。
+
+- **必須要素**: 進行状況バー、ステータス テキスト（「準備中...」「XX MB / YY MB」など）
+
+### 実装方法
+
+HTML に `shared/loader.css` を読み込み、以下の構造を配置する:
+
+```html
+<link rel="stylesheet" href="../../shared/loader.css" />
+
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-content">
+    <!-- 同意画面 -->
+    <div id="consent-state">
+      <div class="loading-icon"><!-- SVG goes here --></div>
+      <h2 class="loading-title">App Name</h2>
+      <p class="loading-subtitle">
+        初回利用時はモデル（約XXMB）のダウンロードが必要です。
+      </p>
+      <button id="consent-btn" class="btn-consent">開始</button>
+    </div>
+
+    <!-- ローディング中画面 -->
+    <div id="loading-state" style="display: none;">
+      <div class="loading-icon"><!-- SVG goes here --></div>
+      <h2 class="loading-title">App Name</h2>
+      <p class="loading-subtitle" id="status-text">準備中...</p>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+JS で制御:
+
+1. 初期状態: `#consent-state` 表示, `#loading-state` 非表示
+2. ボタンクリック:
+   - `#consent-state` を非表示
+   - `#loading-state` を表示
+   - ダウンロード処理開始
+3. 完了時:
+   - `#loading-screen` に `.fade-out` クラスを追加
+   - 完了後に `display: none`
+
 ## Do / Don't
 
 ### ✅ Do

@@ -44,10 +44,18 @@ const USER_COLOR = '#ffffff';
 /* ==========================================================
    DOM
    ========================================================== */
-const $loading    = document.getElementById('loading-screen');
-const $status     = document.getElementById('loading-status');
-const $progress   = document.getElementById('progress-fill');
-const $hint       = document.getElementById('loading-hint');
+/* ==========================================================
+   DOM
+   ========================================================== */
+const $loadingScreen = document.getElementById('loading-screen');
+const $consentState  = document.getElementById('consent-state');
+const $consentBtn    = document.getElementById('consent-btn');
+
+const $loadingState  = document.getElementById('loading-state');
+const $status        = document.getElementById('loading-status');
+const $progress      = document.getElementById('progress-fill');
+const $hint          = document.getElementById('loading-hint');
+
 const $main       = document.getElementById('app-main');
 const $container  = document.getElementById('canvas-container');
 const $form       = document.getElementById('word-form');
@@ -75,21 +83,29 @@ let categoriesVisible = {};
 /* ==========================================================
    エントリーポイント
    ========================================================== */
-(async function main() {
-  try {
-    await loadModel();
-    await encodePresetWords();
-    computePCA();
-    initThreeJS();
-    renderPoints();
-    buildLegend();
-    showApp();
-    setupInteractions();
-  } catch (e) {
-    console.error('Initialization error:', e);
-    $status.textContent = `エラーが発生しました: ${e.message}`;
-    $hint.textContent = 'ページをリロードしてください。';
-  }
+(function main() {
+  // 同意ボタンのイベントリスナー
+  $consentBtn.addEventListener('click', async () => {
+    // UIをロード中モードに切り替え
+    $consentState.style.display = 'none';
+    $loadingState.style.display = 'block';
+
+    try {
+      await loadModel();
+      await encodePresetWords();
+      computePCA();
+      initThreeJS();
+      renderPoints();
+      buildLegend();
+      showApp();
+      setupInteractions();
+    } catch (e) {
+      console.error('Initialization error:', e);
+      $status.textContent = `エラーが発生しました: ${e.message}`;
+      $hint.textContent = 'ページをリロードしてください。';
+      $progress.style.background = '#ef4444'; 
+    }
+  });
 })();
 
 /* ==========================================================
@@ -581,10 +597,10 @@ function buildLegend() {
    画面表示
    ========================================================== */
 function showApp() {
-  $loading.classList.add('fade-out');
+  $loadingScreen.classList.add('fade-out');
   $main.style.display = '';
   onResize();
-  setTimeout(() => { $loading.style.display = 'none'; }, 600);
+  setTimeout(() => { $loadingScreen.style.display = 'none'; }, 600);
 }
 
 /* ==========================================================
