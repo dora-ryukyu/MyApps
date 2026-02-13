@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ローカル翻訳 — MyApps</title>
+    <meta name="description" content="AIモデルを使ったブラウザ完結の日英翻訳。データはサーバーに送信されません。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/loader.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');</script>
+</head>
+
+<body>
+    <!-- ローディング画面 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <!-- State 1: Consent -->
+            <div id="consent-state">
+                <div class="loading-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m5 8 6 6" />
+                        <path d="m4 14 6-6 2-3" />
+                        <path d="M2 5h12" />
+                        <path d="M7 2h1" />
+                        <path d="m22 22-5-10-5 10" />
+                        <path d="M14 18h6" />
+                    </svg>
+                </div>
+                <h2 class="loading-title">ローカル翻訳</h2>
+                <p class="loading-subtitle">
+                    初回利用時はAI翻訳モデル（約485MB）のダウンロードが必要です。<br>
+                    ダウンロード後はブラウザにキャッシュされ、<strong>すべての処理がローカルで完結</strong>します。
+                </p>
+                <button id="consent-btn" class="btn-consent">
+                    モデルをダウンロードして開始
+                </button>
+            </div>
+
+            <!-- State 2: Loading State -->
+            <div id="loading-state" style="display: none;">
+                <div class="loading-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                </div>
+                <h2 class="loading-title">ローカル翻訳</h2>
+                <p class="loading-subtitle" id="loading-status">AIモデルを準備しています…</p>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p class="loading-hint" id="loading-hint">初回はモデルのダウンロードに時間がかかります</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main" id="app-main" style="display:none;">
+        <div class="translator-wrapper">
+            <!-- ヘッダーバッジ -->
+            <div class="privacy-bar">
+                <div class="privacy-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <span>データは一切送信されません</span>
+                </div>
+                <div class="powered-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path
+                            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                    </svg>
+                    <span>Powered by local AI</span>
+                </div>
+            </div>
+
+            <!-- リアルタイムモード切替 -->
+            <div class="mode-bar">
+                <label class="toggle-label" for="realtime-toggle">
+                    <span class="toggle-text">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path
+                                d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                        </svg>
+                        リアルタイム翻訳
+                    </span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="realtime-toggle">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
+                <span class="mode-hint" id="mode-hint">タイピングしながらリアルタイムで翻訳</span>
+            </div>
+
+            <!-- 翻訳パネル -->
+            <div class="translator-grid">
+                <!-- 入力パネル -->
+                <div class="translator-pane input-pane">
+                    <div class="pane-header">
+                        <button class="lang-btn active" id="lang-source" type="button">
+                            <span id="source-lang-label">English</span>
+                        </button>
+                        <button class="swap-btn" id="swap-btn" type="button" aria-label="言語を入れ替え">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m7 16 -4 -4 4-4" />
+                                <path d="M3 12h18" />
+                                <path d="m17 8 4 4-4 4" />
+                            </svg>
+                        </button>
+                        <button class="lang-btn" id="lang-target" type="button">
+                            <span id="target-lang-label">日本語</span>
+                        </button>
+                    </div>
+                    <div class="pane-body">
+                        <textarea id="source-text" placeholder="翻訳するテキストを入力…" rows="8" autofocus></textarea>
+                        <div class="pane-footer">
+                            <span class="char-count" id="char-count">0</span>
+                            <button class="btn-clear" id="clear-btn" type="button" aria-label="クリア"
+                                style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="btn-translate" id="translate-btn" type="button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m5 8 6 6" />
+                            <path d="m4 14 6-6 2-3" />
+                            <path d="M2 5h12" />
+                            <path d="M7 2h1" />
+                            <path d="m22 22-5-10-5 10" />
+                            <path d="M14 18h6" />
+                        </svg>
+                        翻訳
+                    </button>
+                </div>
+
+                <!-- 出力パネル -->
+                <div class="translator-pane output-pane">
+                    <div class="pane-header">
+                        <span class="output-lang-label" id="output-lang-label">日本語</span>
+                        <div class="output-actions">
+                            <button class="btn-icon-sm" id="copy-btn" type="button" aria-label="コピー"
+                                style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                                    <path
+                                        d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pane-body output-body">
+                        <div class="output-text" id="output-text">
+                            <span class="output-placeholder">翻訳結果がここに表示されます</span>
+                        </div>
+                    </div>
+                    <div class="metrics-bar" id="metrics-bar" style="display:none;">
+                        <span class="metric" id="metric-speed">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                            </svg>
+                            <span id="speed-value">— tok/s</span>
+                        </span>
+                        <span class="metric" id="metric-tokens">
+                            <span id="tokens-value">— tokens</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About パネル -->
+        <div class="about-panel" id="about-panel" style="display:none;">
+            <div class="about-header">
+                <h3 class="about-title">About This App</h3>
+                <button class="btn-icon about-close" id="about-close" type="button" aria-label="閉じる">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="about-body">
+                <section class="about-section">
+                    <h4>Architecture</h4>
+                    <p><strong>LFM2-350M-ENJP-MT</strong> (INT4 Quantized)<br>
+                        Liquid AI
+                        が開発した次世代の言語モデル。従来のTransformerと異なり、<strong>AttentionとConvolution（畳み込み）を組み合わせたハイブリッドアーキテクチャ</strong>を採用しています。これにより、軽量ながら350Mパラメータで高品質な翻訳を実現しています。
+                    </p>
+                </section>
+                <section class="about-section">
+                    <h4>Privacy & Security</h4>
+                    <ul class="about-list">
+                        <li><strong>完全ローカル実行</strong> — 入力データが外部サーバーに送信されることはありません。</li>
+                        <li><strong>オフライン対応</strong> — 一度モデルをダウンロードすれば、ネット環境がなくても動作します。</li>
+                    </ul>
+                </section>
+                <section class="about-section">
+                    <h4>Real-time Mode</h4>
+                    <p>WebGPUのパワーを活用し、<strong>文字入力と同時に推論を行う</strong>リアルタイム翻訳を実現。タイプライターのようなレスポンスを楽しめます。</p>
+                </section>
+                <section class="about-section about-tech">
+                    <h4>Tech Stack</h4>
+                    <p>Inference: <a href="https://huggingface.co/docs/transformers.js" target="_blank"
+                            rel="noopener">Transformers.js v3.8</a> (ONNX Runtime Web)<br>
+                        Model: <a href="https://huggingface.co/onnx-community/LFM2-350M-ENJP-MT-ONNX" target="_blank"
+                            rel="noopener">LFM2-350M-ENJP-MT-ONNX</a><br>
+                        Backend: WebGPU (Fallback to WASM/CPU)</p>
+                </section>
+            </div>
+        </div>
+
+        <!-- 情報バッジ -->
+        <div class="info-badge" id="info-badge">
+            <button class="btn-about" id="about-btn" type="button" aria-label="このアプリについて">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                </svg>
+                About
+            </button>
+        </div>
+    </main>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"
+        }
+    }
+    </script>
+
+    <script src="../../shared/header.js" data-app-name="ローカル翻訳" data-app-icon="languages"
+        data-app-color="#0ea5e9"></script>
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

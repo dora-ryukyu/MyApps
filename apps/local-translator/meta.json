@@ -1,0 +1,8 @@
+{
+  "id": "local-translator",
+  "name": "ローカル翻訳",
+  "description": "AIモデルを使ったブラウザ完結の日英翻訳。データはサーバーに送信されません。",
+  "icon": "languages",
+  "color": "#0ea5e9",
+  "tags": ["AI", "翻訳", "プライバシー"]
+}
