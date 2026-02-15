@@ -195,7 +195,11 @@ body {
   inset: 0;
   border-radius: var(--r);
   padding: 2px;
-  background: linear-gradient(135deg, var(--c-accent), transparent 60%);
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y),
+    var(--c-accent),
+    transparent 40%
+  );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
