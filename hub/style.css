@@ -12,6 +12,10 @@
   /* Override page width for Hub to fit 4 cards */
   --w-page: 1280px;
 
+  /* Hub Glass Tokens */
+  --c-hub-glass-bg: rgba(255, 255, 255, 0.6);
+  --c-hub-glass-blur: blur(16px);
+
   --c-shadow-card: 
     0 4px 6px -1px rgba(0, 0, 0, 0.02),
     0 2px 4px -1px rgba(0, 0, 0, 0.02),
@@ -23,6 +27,8 @@
 }
 
 [data-theme="dark"] {
+  --c-hub-glass-bg: rgba(30, 32, 40, 0.6);
+  
   --c-shadow-card: 
     0 4px 6px -1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -33,6 +39,8 @@
 
 @media (prefers-color-scheme: dark) {
   [data-theme="system"] {
+    --c-hub-glass-bg: rgba(30, 32, 40, 0.6);
+
     --c-shadow-card: 
       0 4px 6px -1px rgba(0, 0, 0, 0.3),
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -83,11 +91,11 @@ body {
   font-size: 16px;
   color: var(--c-text);
   
-  background: var(--c-surface-card);
-  border: 1px solid var(--c-border-strong);
-  
   /* Glass card style */
-  backdrop-filter: blur(8px);
+  background: var(--c-hub-glass-bg);
+  backdrop-filter: var(--c-hub-glass-blur);
+  -webkit-backdrop-filter: var(--c-hub-glass-blur);
+  border: 1px solid var(--c-border-strong);
   border-radius: var(--r);
   
   box-shadow: var(--c-shadow-sm);
@@ -166,9 +174,9 @@ body {
   padding: 20px;
   
   /* Glass card */
-  background: var(--c-surface-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--c-hub-glass-bg);
+  backdrop-filter: var(--c-hub-glass-blur);
+  -webkit-backdrop-filter: var(--c-hub-glass-blur);
   
   border: 1px solid var(--c-border-strong);
   border-radius: var(--r);
