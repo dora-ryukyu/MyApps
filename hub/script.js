@@ -203,12 +203,122 @@
     el.innerHTML =
       `<div class="card-icon">${iconSvg(app.icon || FALLBACK)}</div>` +
       `<div class="card-body">` +
-        `<div class="card-name">${esc(app.name)}</div>` +
-        `<div class="card-desc">${esc(app.description)}</div>` +
-        (tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : '') +
+        `<div class="card-name" title="${esc(app.name)}">` +
+          `<span class="card-name-inner">${esc(app.name)}</span>` +
+        `</div>` +
+        `<div class="card-desc" title="${esc(app.description)}">${esc(app.description)}</div>` +
+        (tagsHtml ? 
+           `<div class="card-tags">` +
+             `<div class="card-tags-inner">${tagsHtml}</div>` +
+           `</div>` 
+           : ''
+        ) +
       `</div>`;
 
+    // Attach marquee behavior (Triggered by hovering the card 'el')
+    const nameBox = el.querySelector('.card-name');
+    const nameInner = el.querySelector('.card-name-inner');
+    if (nameBox && nameInner) attachMarquee(el, nameBox, nameInner);
+
+    const tagsBox = el.querySelector('.card-tags');
+    const tagsInner = el.querySelector('.card-tags-inner');
+    if (tagsBox && tagsInner) attachMarquee(el, tagsBox, tagsInner);
+    
     return el;
+  }
+
+  /* ---------- Marquee Logic ---------- */
+  function attachMarquee(trigger, container, inner) {
+    let isHovering = false;
+    let timerScroll, timerFadeOut, timerReset, timerFadeIn;
+    
+    const SPEED_PX_PER_SEC = 30; // Speed
+    const WAIT_AT_END = 1500;    // Pause before resetting
+    const FADE_DURATION = 500;   // Fade out/in duration
+    const BUFFER = 2;            // Ignored small overflow pixels
+
+    const resetStyles = () => {
+      inner.style.transition = 'none';
+      inner.style.transform = 'translateX(0)';
+      inner.style.opacity = '1';
+    };
+
+    const animate = () => {
+      if (!isHovering) return;
+      
+      const overflow = inner.scrollWidth - container.clientWidth;
+      if (overflow <= BUFFER) return; // Don't scroll if fully visible (or negligible)
+
+      // 1. Reset position (instant)
+      inner.style.transition = 'none';
+      inner.style.transform = 'translateX(0)';
+      inner.style.opacity = '1';
+      
+      // Force reflow
+      void inner.offsetWidth;
+
+      const scrollDuration = (overflow / SPEED_PX_PER_SEC) * 1000;
+      
+      // 2. Start scrolling
+      inner.style.transition = `transform ${scrollDuration}ms linear`;
+      inner.style.transform = `translateX(-${overflow}px)`;
+
+      // 3. Wait at end, then Fade Out
+      timerFadeOut = setTimeout(() => {
+        if (!isHovering) return;
+        
+        inner.style.transition = `opacity ${FADE_DURATION}ms ease`;
+        inner.style.opacity = '0';
+
+        // 4. Reset position while invisible
+        timerReset = setTimeout(() => {
+          if (!isHovering) return;
+          
+          inner.style.transition = 'none';
+          inner.style.transform = 'translateX(0)';
+          
+          // 5. Fade In
+          timerFadeIn = setTimeout(() => {
+            if (!isHovering) return;
+            
+            inner.style.transition = `opacity ${FADE_DURATION}ms ease`;
+            inner.style.opacity = '1';
+            
+            // 6. Loop
+            setTimeout(() => {
+              if (isHovering) animate();
+            }, FADE_DURATION + 200);
+
+          }, 50); // Short delay before fade in
+
+        }, FADE_DURATION);
+
+      }, scrollDuration + WAIT_AT_END);
+    };
+
+    trigger.addEventListener('mouseenter', () => {
+      isHovering = true;
+      // Small delay to ensure layout is stable
+      setTimeout(animate, 50);
+    });
+
+    trigger.addEventListener('mouseleave', () => {
+      isHovering = false;
+      clearTimeout(timerScroll);
+      clearTimeout(timerFadeOut);
+      clearTimeout(timerReset);
+      clearTimeout(timerFadeIn);
+      
+      // Smooth return
+      const overflow = inner.scrollWidth - container.clientWidth;
+      if (overflow > BUFFER) {
+        inner.style.transition = 'transform 300ms ease-out, opacity 300ms ease';
+        inner.style.transform = 'translateX(0)';
+        inner.style.opacity = '1';
+      } else {
+        resetStyles();
+      }
+    });
   }
 
   /* ---------- Render ---------- */
