@@ -1,0 +1,13 @@
+{
+  "id": "json-formatter",
+  "name": "JSON 整形",
+  "description": "JSON データの検証、整形、圧縮ツール。エラー箇所の特定も可能。",
+  "icon": "braces",
+  "color": "#f59e0b",
+  "tags": [
+    "ツール",
+    "開発",
+    "テキスト",
+    "変換"
+  ]
+}

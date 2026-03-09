@@ -1,0 +1,12 @@
+{
+  "id": "data-uri-pro",
+  "name": "Data URI Pro",
+  "description": "画像を Base64 (Data URI) に変換。CSS や HTML でそのまま使えるコードを生成。",
+  "icon": "file-type-2",
+  "color": "#f59e0b",
+  "tags": [
+    "開発",
+    "ツール",
+    "変換"
+  ]
+}

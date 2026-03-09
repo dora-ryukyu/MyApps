@@ -1,0 +1,11 @@
+{
+  "id": "qr-master",
+  "name": "QRコード・マスター",
+  "description": "QRコードの作成と読み取り（スキャン）に対応。URLやWi-Fi情報などを素早く共有できます。",
+  "icon": "qr-code",
+  "color": "#10b981",
+  "tags": [
+    "ツール",
+    "開発"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "markdown-editor",
+  "name": "Markdownエディタ",
+  "description": "リアルタイムプレビュー機能付きの Markdown エディタ。文章作成やメモに。",
+  "icon": "file-text",
+  "color": "#0ea5e9",
+  "tags": [
+    "ツール",
+    "開発"
+  ]
+}

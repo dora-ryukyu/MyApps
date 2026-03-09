@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palette Extractor — MyApps</title>
+    <meta name="description" content="画像から主要カラーを抽出し、HEX コードをすばやくコピーできます。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <div class="palette-container">
+            <div id="drop-zone" class="drop-zone card glass">
+                <div class="drop-content">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.607-.405 1.846-1.033l.344-.92c.31-.83 1.15-1.047 1.81-1.047H19a2 2 0 0 0 2-2 9 9 0 0 0-9-15Z"/><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/></svg>
+                    <p id="drop-text">画像をドロップしてパレットを抽出</p>
+                </div>
+                <input type="file" id="file-input" accept="image/*" hidden>
+            </div>
+
+            <div id="result-area" class="result-area" style="display:none;">
+                <div class="image-card card glass">
+                    <img id="source-img" src="" alt="抽出元画像">
+                </div>
+                <div class="colors-card card glass">
+                    <h3>Extracted Palette</h3>
+                    <div id="palette-grid" class="palette-grid"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    <script src="../../shared/header.js" data-app-name="Palette Extractor" data-app-icon="palette" data-app-color="#8b5cf6"></script>
+    <script src="script.js"></script>
+</body>
+</html>

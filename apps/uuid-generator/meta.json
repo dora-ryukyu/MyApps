@@ -1,0 +1,11 @@
+{
+  "id": "uuid-generator",
+  "name": "UUID生成器",
+  "description": "RFC 4122 に準拠した UUID (v4) を一括生成。開発やテストデータ作成に。",
+  "icon": "fingerprint",
+  "color": "#6366f1",
+  "tags": [
+    "開発",
+    "ツール"
+  ]
+}

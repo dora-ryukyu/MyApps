@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正規表現テスター — MyApps</title>
+    <meta name="description" content="正規表現のパターンマッチングをリアルタイムで検証・ハイライト表示。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <!-- Regex Input -->
+        <div class="regex-container card">
+            <div class="regex-input-wrapper">
+                <span class="regex-slash">/</span>
+                <input type="text" id="regex-pattern" class="regex-field" placeholder="パターンを入力 (例: \d+)" spellcheck="false" autocomplete="off">
+                <span class="regex-slash">/</span>
+                <input type="text" id="regex-flags" class="flags-field" placeholder="g" value="gm" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="regex-error" id="regex-error"></div>
+        </div>
+
+        <div class="editor-grid">
+            <!-- Test String Input -->
+            <div class="editor-pane">
+                <div class="pane-header">テスト文字列</div>
+                <textarea id="test-string" placeholder="ここにテストしたいテキストを入力してください..." spellcheck="false">Hello 123 World 456!</textarea>
+            </div>
+
+            <!-- Highlight Output -->
+            <div class="editor-pane">
+                <div class="pane-header">
+                    <span>マッチ結果</span>
+                    <span id="match-count" class="match-badge">0 matches</span>
+                </div>
+                <div id="result-display" class="result-display"></div>
+            </div>
+        </div>
+        
+        <!-- Cheat Sheet -->
+        <div class="cheatsheet card">
+            <h3>クイックリファレンス</h3>
+            <div class="cheatsheet-grid">
+                <div><code>.</code> 任意の1文字</div>
+                <div><code>\d</code> 数字</div>
+                <div><code>\w</code> 英数字・アンダースコア</div>
+                <div><code>^</code> 行頭</div>
+                <div><code>$</code> 行末</div>
+                <div><code>*</code> 0回以上の繰り返し</div>
+                <div><code>+</code> 1回以上の繰り返し</div>
+                <div><code>?</code> 0回または1回</div>
+                <div><code>[]</code> 文字クラス</div>
+                <div><code>()</code> グループ化</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../../shared/header.js" 
+        data-app-name="正規表現テスター" 
+        data-app-icon="regex" 
+        data-app-color="#e11d48"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+:root {
+    --c-app: #8b5cf6;
+}
+
+.palette-container {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+}
+
+.drop-zone {
+    height: 200px;
+    background: var(--c-surface-card);
+    border: 2px dashed var(--c-border);
+    border-radius: var(--r-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--duration);
+    box-shadow: var(--shadow-lg);
+}
+
+.drop-zone:hover {
+    border-color: var(--c-app);
+    background: rgba(139, 92, 246, 0.05);
+    transform: translateY(-2px);
+}
+
+.drop-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+    color: var(--c-text-3);
+}
+
+.drop-content p {
+    font-weight: 700;
+    font-size: var(--text-base);
+    color: var(--c-text-2);
+}
+
+.result-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-8);
+}
+
+@media (max-width: 900px) {
+    .result-area {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Source Image Card */
+.image-card {
+    background: var(--c-surface-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: var(--sp-6); /* 余白を確保 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+#source-img {
+    max-width: 100%;
+    max-height: 500px;
+    border-radius: var(--r-xl); /* 角丸を強化 */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* Colors Card */
+.colors-card {
+    background: var(--c-surface-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: var(--sp-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-6);
+    box-shadow: var(--shadow-lg);
+}
+
+.colors-card h3 {
+    font-size: var(--text-xs);
+    font-weight: 800;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-bottom: 1px solid var(--c-border);
+    padding-bottom: var(--sp-2);
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--sp-6);
+}
+
+.color-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    transition: transform 0.2s;
+}
+
+.color-swatch:hover {
+    transform: translateY(-4px);
+}
+
+.color-box {
+    height: 100px;
+    border-radius: var(--r-xl); /* 角丸を強化 */
+    border: 1px solid rgba(0,0,0,0.1);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
+}
+
+.color-swatch:hover .color-box {
+    box-shadow: var(--shadow-lg);
+}
+
+.color-hex {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-align: center;
+    color: var(--c-text-2);
+}

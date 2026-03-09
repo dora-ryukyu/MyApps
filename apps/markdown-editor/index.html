@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdownエディタ — MyApps</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="editor-header toolbar">
+            <div class="toolbar-group">
+                <span class="status-badge" id="char-count">0 Chars</span>
+                <span class="status-badge" id="word-count">0 Words</span>
+            </div>
+            <div class="toolbar-group">
+                <button id="btn-copy" class="btn btn-primary">Copy Markdown</button>
+                <button id="btn-clear" class="btn btn-danger">Clear</button>
+            </div>
+        </header>
+
+        <div class="editor-grid">
+            <div class="pane editor-pane">
+                <div class="pane-label">Editor</div>
+                <textarea id="markdown-input" placeholder="# Write something..."></textarea>
+            </div>
+            <div class="pane preview-pane">
+                <div class="pane-label">Preview</div>
+                <div id="markdown-output" class="markdown-body"></div>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="../../shared/header.js" data-app-name="Markdownエディタ" data-app-icon="file-text" data-app-color="#0ea5e9"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+/* NumBase Station — MyApps Style */
+
+:root {
+    --c-accent: #8b5cf6; /* Violet */
+    --c-accent-soft: rgba(139, 92, 246, 0.1);
+    --c-accent-glow: rgba(139, 92, 246, 0.3);
+}
+
+.app-main {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: var(--sp-8);
+}
+
+.dashboard.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-6);
+}
+
+.stat-card {
+    background: var(--c-surface-card);
+    backdrop-filter: var(--glass);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-xl);
+    padding: var(--sp-6) var(--sp-8);
+    transition: all var(--duration-slow) var(--ease-default);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    box-shadow: var(--shadow);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg), 0 0 20px var(--c-accent-soft);
+}
+
+.stat-card.full-width {
+    grid-column: span 2;
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.badge {
+    font-size: var(--text-xs);
+    font-weight: 800;
+    color: white;
+    background: var(--c-accent);
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--r-sm);
+    letter-spacing: 0.1em;
+    box-shadow: 0 4px 10px var(--c-accent-glow);
+}
+
+.stat-header label {
+    font-size: var(--text-xs);
+    font-weight: 800;
+    color: var(--c-text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.stat-value {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: 800;
+    color: var(--c-text);
+    padding: var(--sp-2) 0;
+    border-bottom: 2px solid transparent;
+    transition: all var(--duration);
+}
+
+.stat-value:focus {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+}
+
+.stat-value::placeholder {
+    color: var(--c-text-3);
+    opacity: 0.3;
+}
+
+.info-footer {
+    margin-top: var(--sp-8);
+    text-align: center;
+    color: var(--c-text-3);
+    font-size: var(--text-sm);
+}
+
+@media (max-width: 768px) {
+    .dashboard.grid {
+        grid-template-columns: 1fr;
+    }
+    .stat-card.full-width {
+        grid-column: span 1;
+    }
+    .stat-value {
+        font-size: var(--text-2xl);
+    }
+}
+
+@media (max-width: 480px) {
+    .app-main {
+        padding: var(--sp-4);
+    }
+    .stat-card {
+        padding: var(--sp-5) var(--sp-6);
+    }
+    .stat-value {
+        font-size: var(--text-xl);
+    }
+}

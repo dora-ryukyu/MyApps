@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコード・マスター — MyApps</title>
+    <meta name="description" content="QRコードの作成と読み取り（スキャン）に対応。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <div class="tabs card glass">
+            <button class="tab-btn active" data-tab="create">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M7 17h.01"/><path d="M17 7h.01"/><path d="M12 12h.01"/><path d="M17 17h.01"/></svg>
+                作成
+            </button>
+            <button class="tab-btn" data-tab="scan">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" x2="17" y1="12" y2="12"/></svg>
+                スキャン
+            </button>
+        </div>
+
+        <div id="tab-create" class="tab-content active">
+            <div class="editor-grid">
+                <div class="editor-pane card glass">
+                    <div class="pane-header">入力テキスト</div>
+                    <textarea id="qr-input" placeholder="URLやテキストを入力してください..." spellcheck="false">https://myapps.example.com</textarea>
+                </div>
+                <div class="editor-pane card glass preview-pane">
+                    <div class="pane-header">プレビュー</div>
+                    <div class="qr-result-wrap">
+                        <div id="qr-result" class="qr-container"></div>
+                    </div>
+                    <div class="actions-row">
+                        <button id="btn-download" class="btn btn-primary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-scan" class="tab-content">
+            <div class="editor-grid">
+                <div class="editor-pane card glass scanner-pane">
+                    <div class="pane-header">スキャナー</div>
+                    <div class="scanner-container">
+                        <video id="scan-video" playsinline></video>
+                        <canvas id="scan-canvas" style="display: none;"></canvas>
+                        <div id="scan-overlay" class="scan-overlay">
+                            <div class="scan-frame"></div>
+                        </div>
+                        <div id="scan-placeholder" class="drop-zone">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+                            <span>画像をドラッグ、またはクリック</span>
+                        </div>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button id="btn-start-camera" class="btn btn-primary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                            カメラ起動
+                        </button>
+                        <input type="file" id="input-file" accept="image/*" hidden>
+                        <button id="btn-open-file" class="btn btn-secondary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M7 13h10"/><path d="M12 8v10"/></svg>
+                            画像選択
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-pane card glass">
+                    <div class="pane-header">読み取り結果</div>
+                    <textarea id="scan-result" readonly placeholder="結果がここに表示されます..."></textarea>
+                    <div class="toolbar-actions">
+                        <button id="btn-copy" class="btn btn-secondary">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                            コピー
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="../../shared/header.js" 
+        data-app-name="QRコード・マスター" 
+        data-app-icon="qr-code" 
+        data-app-color="#10b981"></script>
+    <script src="script.js"></script>
+</body>
+</html>

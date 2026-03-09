@@ -1,0 +1,11 @@
+{
+  "id": "palette-extractor",
+  "name": "Palette Extractor",
+  "description": "画像から主要な色を抽出し、カラーパレットを生成。",
+  "icon": "palette",
+  "color": "#8b5cf6",
+  "tags": [
+    "デザイン",
+    "画像"
+  ]
+}

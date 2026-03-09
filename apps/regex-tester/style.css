@@ -1,0 +1,184 @@
+:root {
+    --c-app: #e11d48;
+    --c-app-soft: rgba(225, 29, 72, 0.1);
+    --c-app-glow: rgba(225, 29, 72, 0.4);
+}
+
+.app-main {
+    max-width: var(--w-page);
+    margin: 0 auto;
+    padding: var(--sp-5) var(--sp-5) var(--sp-8);
+    height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+/* --- Regex Input --- */
+.regex-container {
+    background: var(--c-surface-solid);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4) var(--sp-5);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.regex-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.regex-slash {
+    color: var(--c-text-3);
+    user-select: none;
+}
+
+.regex-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--c-border);
+    color: var(--c-text);
+    padding: var(--sp-1) var(--sp-2);
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+
+.regex-field:focus {
+    border-color: var(--c-app);
+}
+
+.flags-field {
+    width: 60px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--c-border);
+    color: var(--c-app);
+    padding: var(--sp-1) var(--sp-2);
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+
+.flags-field:focus {
+    border-color: var(--c-app);
+}
+
+.regex-error {
+    font-size: var(--text-xs);
+    color: #ef4444;
+    min-height: 1.2em;
+    font-weight: 500;
+}
+
+/* --- Grid --- */
+.editor-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-4);
+    min-height: 0;
+}
+
+@media (max-width: 768px) {
+    .editor-grid {
+        grid-template-rows: 1fr 1fr;
+        grid-template-columns: 1fr;
+    }
+}
+
+.editor-pane {
+    display: flex;
+    flex-direction: column;
+    background: var(--c-surface-solid);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+.pane-header {
+    padding: var(--sp-2) var(--sp-4);
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+    font-weight: 600;
+    font-size: var(--text-xs);
+    color: var(--c-text-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-transform: uppercase;
+}
+
+.match-badge {
+    background: var(--c-app);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--r-full);
+    font-size: 10px;
+}
+
+/* --- Content Areas --- */
+textarea, .result-display {
+    flex: 1;
+    width: 100%;
+    padding: var(--sp-4);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    background: transparent;
+    color: var(--c-text);
+    border: none;
+    outline: none;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+textarea:focus-visible {
+    background: var(--c-app-soft);
+}
+
+.result-display mark {
+    background: var(--c-app-glow);
+    color: inherit;
+    border-radius: 2px;
+}
+
+/* --- Cheat Sheet --- */
+.cheatsheet {
+    background: var(--c-surface-solid);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4) var(--sp-5);
+}
+
+.cheatsheet h3 {
+    font-size: var(--text-sm);
+    margin-bottom: var(--sp-3);
+    color: var(--c-text-2);
+}
+
+.cheatsheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--sp-2);
+}
+
+.cheatsheet-grid div {
+    font-size: var(--text-xs);
+    color: var(--c-text-3);
+}
+
+.cheatsheet-grid code {
+    color: var(--c-app);
+    font-weight: 600;
+    margin-right: 4px;
+}
