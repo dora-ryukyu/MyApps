@@ -24,14 +24,14 @@
                 <input type="file" id="file-input" accept="image/*" hidden>
             </div>
 
-            <div id="result-area" class="result-area" style="display:none;">
+            <div id="result-area" class="result-area is-empty">
                 <div class="preview-card card">
                     <h3>プレビュー</h3>
                     <div class="img-wrap">
                         <img id="preview-img" src="" alt="">
                     </div>
                     <div class="info-line">
-                        <span id="file-name">—</span>
+                        <span id="file-name">未選択</span>
                         <span id="file-size">—</span>
                     </div>
                 </div>
@@ -42,7 +42,7 @@
                             <span>Data URI (Raw)</span>
                             <button class="btn-copy btn btn-soft btn-sm" data-target="c-raw">コピー</button>
                         </div>
-                        <textarea id="c-raw" readonly></textarea>
+                        <textarea id="c-raw" readonly placeholder="data:image/png;base64,..."></textarea>
                     </div>
 
                     <div class="card code-card">
@@ -50,7 +50,7 @@
                             <span>CSS Background</span>
                             <button class="btn-copy btn btn-soft btn-sm" data-target="c-css">コピー</button>
                         </div>
-                        <textarea id="c-css" readonly></textarea>
+                        <textarea id="c-css" readonly placeholder="background-image: url('...');"></textarea>
                     </div>
 
                     <div class="card code-card">
@@ -58,7 +58,7 @@
                             <span>HTML Image</span>
                             <button class="btn-copy btn btn-soft btn-sm" data-target="c-html">コピー</button>
                         </div>
-                        <textarea id="c-html" readonly></textarea>
+                        <textarea id="c-html" readonly placeholder="<img src='...' alt=''>"></textarea>
                     </div>
                 </div>
             </div>

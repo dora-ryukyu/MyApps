@@ -57,7 +57,7 @@ function processFile(file) {
         cCss.value = `background-image: url("${dataUri}");`;
         cHtml.value = `<img src="${dataUri}" alt="${escapeAttribute(file.name)}">`;
 
-        resultArea.style.display = 'grid';
+        resultArea.classList.remove('is-empty');
         setBusy(false);
     };
     reader.onerror = () => handleError('画像の読み込みに失敗しました。');

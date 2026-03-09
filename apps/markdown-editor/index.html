@@ -16,22 +16,24 @@
     <main class="app-main">
         <header class="editor-header toolbar">
             <div class="toolbar-group">
-                <span class="status-badge" id="char-count">0 Chars</span>
-                <span class="status-badge" id="word-count">0 Words</span>
+                <div class="stat-item"><span class="stat-value" id="char-count">0</span><span class="stat-label">文字</span></div>
+                <div class="stat-item"><span class="stat-value" id="word-count">0</span><span class="stat-label">単語</span></div>
+                <div class="stat-item"><span class="stat-value" id="line-count">0</span><span class="stat-label">行</span></div>
+                <div class="stat-item"><span class="stat-value" id="read-time">0</span><span class="stat-label">分 (読了)</span></div>
             </div>
             <div class="toolbar-group">
-                <button id="btn-copy" class="btn btn-primary">Copy Markdown</button>
-                <button id="btn-clear" class="btn btn-danger">Clear</button>
+                <button id="btn-copy" class="btn btn-primary">コピー</button>
+                <button id="btn-clear" class="btn btn-danger">クリア</button>
             </div>
         </header>
 
         <div class="editor-grid">
             <div class="pane editor-pane">
-                <div class="pane-label">Editor</div>
-                <textarea id="markdown-input" placeholder="# Write something..."></textarea>
+                <div class="pane-label">エディタ</div>
+                <textarea id="markdown-input" placeholder="# ここに入力..." spellcheck="false"></textarea>
             </div>
             <div class="pane preview-pane">
-                <div class="pane-label">Preview</div>
+                <div class="pane-label">プレビュー</div>
                 <div id="markdown-output" class="markdown-body"></div>
             </div>
         </div>

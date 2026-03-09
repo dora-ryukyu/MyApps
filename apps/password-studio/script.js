@@ -47,7 +47,7 @@
     function syncLengthInputs(poolCount) {
         const minLength = Math.max(4, poolCount || 4);
         const current = Number.parseInt(lengthNum.value, 10) || minLength;
-        const safeLength = Math.max(minLength, Math.min(128, current));
+        const safeLength = Math.max(minLength, Math.min(50, current));
 
         lengthRange.min = String(minLength);
         lengthNum.min = String(minLength);
@@ -119,6 +119,8 @@
             if (event.target === lengthNum) {
                 lengthRange.value = lengthNum.value;
             }
+            const label = document.getElementById('length-label');
+            if (label) label.textContent = lengthRange.value;
             generate();
         });
     });

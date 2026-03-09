@@ -1,18 +1,14 @@
-/* Data URI Pro — MyApps Style */
-
 :root {
-    --c-accent: #f59e0b; /* Amber */
-    --c-accent-soft: rgba(245, 158, 11, 0.1);
-    --c-accent-glow: rgba(245, 158, 11, 0.4);
+    --c-app: var(--c-accent);
 }
 
 .uri-container {
-    max-width: 1000px;
-    margin: var(--sp-8) auto;
+    max-width: var(--w-page);
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-8);
-    padding: 0 var(--sp-6);
+    gap: var(--sp-6);
+    padding: var(--sp-6) var(--sp-4);
 }
 
 .drop-zone {
@@ -23,22 +19,16 @@
     justify-content: center;
     text-align: center;
     cursor: pointer;
-    
-    /* Modern Glass & Depth 2.0 */
-    background: var(--c-surface-card);
-    backdrop-filter: var(--glass);
-    -webkit-backdrop-filter: var(--glass);
-    border-radius: var(--r-xl);
+    background: var(--c-surface-solid);
+    border-radius: var(--r-lg);
     position: relative;
     overflow: hidden;
-    transition: all var(--duration-slow) var(--ease-default);
+    transition: all var(--duration) var(--ease-default);
 }
 
 .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--c-accent);
-    background: var(--c-accent-soft);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl), 0 0 20px var(--c-accent-soft);
+    border-color: var(--c-app);
+    background: var(--c-surface-alt);
 }
 
 .drop-content {
@@ -51,38 +41,37 @@
 }
 
 .drop-content svg {
-    color: var(--c-accent);
+    color: var(--c-app);
     transition: all var(--duration) var(--ease-default);
-    filter: drop-shadow(0 0 8px var(--c-accent-glow));
 }
 
 .drop-zone:hover .drop-content svg {
-    transform: scale(1.15) rotate(5deg);
+    transform: scale(1.1);
 }
 
 .drop-content p {
-    font-weight: 800;
+    font-weight: 600;
     font-size: var(--text-lg);
     color: var(--c-text);
 }
 
 .hint {
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     color: var(--c-text-3);
-    font-weight: 600;
-    letter-spacing: 0.02em;
 }
 
 .result-area {
     display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: var(--sp-8);
-    animation: fadeIn var(--duration-slow) var(--ease-default);
+    grid-template-columns: 420px 1fr;
+    gap: var(--sp-6);
+    align-items: stretch;
+    transition: all var(--duration-slow) var(--ease-default);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+.result-area.is-empty {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(100%);
 }
 
 .preview-card {
@@ -90,38 +79,31 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-5);
-    height: fit-content;
-    position: sticky;
-    top: var(--sp-8);
-    
-    /* Modern Glass & Depth 2.0 */
-    background: var(--c-surface-card);
-    backdrop-filter: var(--glass);
-    -webkit-backdrop-filter: var(--glass);
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow-lg);
-    transition: all var(--duration-slow) var(--ease-default);
+    background: var(--c-surface-solid);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+    transition: all var(--duration) var(--ease-default);
 }
 
 .preview-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl), 0 0 15px var(--c-accent-soft);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 .preview-card h3 {
-    font-size: var(--text-xs);
-    font-weight: 800;
-    color: var(--c-accent);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--c-text-2);
     text-transform: uppercase;
-    letter-spacing: 0.15em;
 }
 
 .img-wrap {
+    flex: 1;
     width: 100%;
-    aspect-ratio: 1;
+    min-height: 200px;
     background: var(--c-surface-alt);
-    border-radius: var(--r-xl);
+    border-radius: var(--r);
     border: 1px solid var(--c-border);
     display: flex;
     align-items: center;
@@ -141,106 +123,103 @@
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
 }
 
 .info-line {
     display: flex;
     justify-content: space-between;
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-family: var(--font-mono);
     color: var(--c-text-3);
-    font-weight: 600;
 }
 
 .code-section {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-5);
+    gap: var(--sp-6);
+    height: 100%;
 }
 
 .code-card {
+    flex: 1;
     padding: var(--sp-6);
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
-    
-    /* Modern Glass & Depth 2.0 */
-    background: var(--c-surface-card);
-    backdrop-filter: var(--glass);
-    -webkit-backdrop-filter: var(--glass);
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow-lg);
-    transition: all var(--duration-slow) var(--ease-default);
+    background: var(--c-surface-solid);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+    transition: all var(--duration) var(--ease-default);
 }
 
 .code-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-xl), 0 0 15px var(--c-accent-soft);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: var(--text-xs);
-    font-weight: 800;
+    font-size: var(--text-sm);
+    font-weight: 600;
     color: var(--c-text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
 }
 
 .code-card textarea {
+    flex: 1;
     width: 100%;
-    height: 120px;
+    min-height: 100px;
     font-family: var(--font-mono);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     padding: var(--sp-4);
-    border-radius: var(--r-lg);
+    border-radius: var(--r);
     background: var(--c-surface-alt);
-    border: 2px solid var(--c-border);
-    color: var(--c-text-2);
+    border: 1px solid var(--c-border);
+    color: var(--c-text);
     resize: none;
     transition: all var(--duration) var(--ease-default);
-    line-height: 1.5;
+    line-height: var(--leading);
 }
 
-.code-card textarea:focus {
+.code-card textarea:focus-visible {
     outline: none;
-    border-color: var(--c-accent);
-    color: var(--c-text);
+    border-color: var(--c-app);
     background: var(--c-surface-solid);
-    box-shadow: 0 0 15px var(--c-accent-glow);
+    box-shadow: 0 0 0 3px var(--c-accent-soft);
 }
 
 .btn-copy {
-    padding: var(--sp-2) var(--sp-5);
-    font-size: var(--text-xs);
-    font-weight: 800;
-    border-radius: var(--r-lg);
+    padding: var(--sp-2) var(--sp-4);
+    font-size: var(--text-sm);
+    font-family: var(--font);
+    font-weight: 600;
+    border-radius: var(--r);
     cursor: pointer;
-    background: var(--c-surface-alt);
+    background: var(--c-surface-solid);
     border: 1px solid var(--c-border);
-    color: var(--c-text-2);
+    color: var(--c-text);
     transition: all var(--duration) var(--ease-default);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-copy:focus-visible {
+    outline: 2px solid var(--c-focus-ring);
+    outline-offset: 2px;
 }
 
 .btn-copy:hover {
-    border-color: var(--c-accent);
-    color: var(--c-accent);
-    background: var(--c-surface-solid);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px -2px var(--c-accent-glow);
+    border-color: var(--c-app);
+    background: var(--c-surface-hover);
 }
 
 .btn-copy.copied {
-    background: var(--c-accent);
+    background: var(--c-success);
     color: white;
-    border-color: var(--c-accent);
-    box-shadow: 0 0 15px var(--c-accent-glow);
+    border-color: var(--c-success);
 }
 
 @media (max-width: 860px) {

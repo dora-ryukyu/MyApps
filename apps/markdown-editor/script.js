@@ -2,12 +2,14 @@
 const output = document.getElementById('markdown-output');
 const charCount = document.getElementById('char-count');
 const wordCount = document.getElementById('word-count');
+const lineCount = document.getElementById('line-count');
+const readTime = document.getElementById('read-time');
 const btnCopy = document.getElementById('btn-copy');
 const btnClear = document.getElementById('btn-clear');
 
 const allowedTags = new Set([
     'A', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
-    'HR', 'LI', 'OL', 'P', 'PRE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'
+    'HR', 'IMG', 'LI', 'OL', 'P', 'PRE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'UL'
 ]);
 
 function fallbackRender(rawValue) {
@@ -35,16 +37,24 @@ function sanitizeHtml(html) {
         }
 
         const href = node.tagName === 'A' ? (node.getAttribute('href') || '') : '';
+        const src = node.tagName === 'IMG' ? (node.getAttribute('src') || '') : '';
+        const alt = node.tagName === 'IMG' ? (node.getAttribute('alt') || '') : '';
+        const title = node.tagName === 'IMG' ? (node.getAttribute('title') || '') : '';
 
         for (const attr of [...node.attributes]) {
             node.removeAttribute(attr.name);
         }
 
         if (node.tagName === 'A') {
-            const safeHref = /^(https?:|mailto:|#)/i.test(href) ? href : '#';
+            const safeHref = /^(https?:|mailto:|#|data:|blob:|\.\.\/|\.\/|\/)/i.test(href) ? href : '#';
             node.setAttribute('href', safeHref);
             node.setAttribute('rel', 'noopener noreferrer');
             node.setAttribute('target', '_blank');
+        } else if (node.tagName === 'IMG') {
+            const safeSrc = /^(https?:|data:|blob:|\.\.\/|\.\/|\/)/i.test(src) ? src : '';
+            if (safeSrc) node.setAttribute('src', safeSrc);
+            if (alt) node.setAttribute('alt', alt);
+            if (title) node.setAttribute('title', title);
         }
     }
 
@@ -85,8 +95,15 @@ function update() {
     const rawValue = input.value;
     renderPreview(rawValue);
 
-    charCount.textContent = `${rawValue.length} 文字`;
-    wordCount.textContent = `${rawValue.trim() ? rawValue.trim().split(/\s+/).length : 0} 単語`;
+    const chars = rawValue.length;
+    const words = rawValue.trim() ? rawValue.trim().split(/\s+/).length : 0;
+    const lines = rawValue === '' ? 0 : rawValue.split('\n').length;
+    const time = Math.max(1, Math.ceil(chars / 500)); // Approx 500 chars/min reading speed
+
+    if (charCount) charCount.textContent = chars;
+    if (wordCount) wordCount.textContent = words;
+    if (lineCount) lineCount.textContent = lines;
+    if (readTime) readTime.textContent = time;
 
     persistDraft(rawValue);
 }
@@ -119,14 +136,46 @@ if (savedDraft) {
     input.value = `# Markdown Editor
 リアルタイムプレビュー機能付きの Markdown エディタです。
 
-## 特徴
-- **リアルタイム**に変換
-- HTML は安全な形に制限
-- 完全ローカル動作
+## 基本的な書式
+**太字**、*斜体*、~~打ち消し線~~、\`インラインコード\` が使えます。
 
+> これは引用ブロックです。
+> 複数行にわたる引用もサポートしています。
+
+### リスト
+- 箇条書きリスト
+  - ネストされたリスト
+  - さらにネスト
+- アイテム2
+
+1. 番号付きリスト
+2. アイテム2
+   1. ネストされた番号付きリスト
+
+### 表のサポート
+| 機能 | サポート | 備考 |
+| --- | :---: | --- |
+| 表 (Table) | ✅ | GitHub Flavored Markdown 互換 |
+| 箇条書き | ✅ | ネストにも対応 |
+| シンタックスハイライト | ✅ | 自動エスケープ処理付き |
+
+### コードブロック
 \`\`\`javascript
-console.log("Hello, MyApps!");
+// コードブロックのシンタックスハイライト（CSS調整が必要な場合があります）
+function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+}
+greet("MyApps");
 \`\`\`
+
+### リンクと画像
+[MyAppsのホームへ戻る](../../index.html)
+
+![サンプルの画像](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTRlNGU3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNTI1MjViIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+U2FtcGxlIEltYWdlPC90ZXh0Pjwvc3ZnPg== "サンプル画像")
+
+---
+
+*Markdownの主要な記法は一通りサポートしています。*
 `;
 }
 
