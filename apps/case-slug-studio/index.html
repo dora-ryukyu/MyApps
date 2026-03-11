@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ケース＆スラッグ・スタジオ — MyApps</title>
+    <meta name="description" content="camel/snake/kebab などのケース変換とスラッグ生成を一括で。コピーも即対応。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Text Refinery</p>
+                <h1>ケース＆スラッグ・スタジオ</h1>
+                <p class="lead">入力テキストを分解し、用途別のケース変換やスラッグを一気に出力。開発と執筆の切り替えを高速化します。</p>
+            </div>
+            <div class="hero-marks" aria-hidden="true">
+                <span>camel</span>
+                <span>snake</span>
+                <span>kebab</span>
+                <span>slug</span>
+            </div>
+        </header>
+
+        <section class="panel input-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>入力</h2>
+                    <p class="panel-sub">区切りや大文字を意識せずに貼り付けてください。</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-ghost" id="btn-sample" type="button">サンプル</button>
+                    <button class="btn btn-ghost" id="btn-clear" type="button">クリア</button>
+                </div>
+            </div>
+            <textarea id="input-text" placeholder="Project New Horizon v2" spellcheck="false"></textarea>
+
+            <div class="option-grid">
+                <label class="check">
+                    <input id="opt-trim" type="checkbox" checked>
+                    <span>トリム</span>
+                </label>
+                <label class="check">
+                    <input id="opt-collapse" type="checkbox" checked>
+                    <span>空白を正規化</span>
+                </label>
+                <label class="check">
+                    <input id="opt-remove-symbols" type="checkbox" checked>
+                    <span>記号を除去</span>
+                </label>
+                <label class="check">
+                    <input id="opt-ascii" type="checkbox">
+                    <span>ASCII 化（アクセント除去）</span>
+                </label>
+                <label class="check">
+                    <input id="opt-prefix-number" type="checkbox" checked>
+                    <span>先頭数値に _ を付与</span>
+                </label>
+                <label class="check">
+                    <input id="opt-slug-ascii" type="checkbox" checked>
+                    <span>スラッグは ASCII のみ</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="panel output-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>出力</h2>
+                    <p class="panel-sub">クリックで即コピーできます。</p>
+                </div>
+                <div class="token-indicator">
+                    <span class="token-label">Tokens</span>
+                    <strong id="token-count">0</strong>
+                </div>
+            </div>
+
+            <div class="output-grid">
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>camelCase</span>
+                        <button class="btn btn-ghost" data-copy="camel" type="button">コピー</button>
+                    </div>
+                    <input id="out-camel" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>PascalCase</span>
+                        <button class="btn btn-ghost" data-copy="pascal" type="button">コピー</button>
+                    </div>
+                    <input id="out-pascal" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>snake_case</span>
+                        <button class="btn btn-ghost" data-copy="snake" type="button">コピー</button>
+                    </div>
+                    <input id="out-snake" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>kebab-case</span>
+                        <button class="btn btn-ghost" data-copy="kebab" type="button">コピー</button>
+                    </div>
+                    <input id="out-kebab" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>UPPER_SNAKE</span>
+                        <button class="btn btn-ghost" data-copy="upper" type="button">コピー</button>
+                    </div>
+                    <input id="out-upper" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>Title Case</span>
+                        <button class="btn btn-ghost" data-copy="title" type="button">コピー</button>
+                    </div>
+                    <input id="out-title" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>Sentence case</span>
+                        <button class="btn btn-ghost" data-copy="sentence" type="button">コピー</button>
+                    </div>
+                    <input id="out-sentence" readonly>
+                </div>
+                <div class="output-card">
+                    <div class="output-head">
+                        <span>Slug</span>
+                        <button class="btn btn-ghost" data-copy="slug" type="button">コピー</button>
+                    </div>
+                    <input id="out-slug" readonly>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel tokens-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>トークン分割</h2>
+                    <p class="panel-sub">分割された単語を確認できます。</p>
+                </div>
+            </div>
+            <div class="token-list" id="token-list"></div>
+        </section>
+    </main>
+
+    <script src="../../shared/header.js"
+        data-app-name="ケース＆スラッグ・スタジオ"
+        data-app-icon="type"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

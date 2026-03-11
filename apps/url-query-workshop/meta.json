@@ -1,0 +1,8 @@
+﻿{
+  "id": "url-query-workshop",
+  "name": "URL クエリ工房",
+  "description": "URLを解析し、クエリを自在に編集・再生成。ソートや空値保持、+/%20 変換にも対応。",
+  "icon": "code",
+  "color": "#ea580c",
+  "tags": ["ツール", "開発", "URL", "変換"]
+}

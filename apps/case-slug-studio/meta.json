@@ -1,0 +1,8 @@
+﻿{
+  "id": "case-slug-studio",
+  "name": "ケース＆スラッグ・スタジオ",
+  "description": "camel/snake/kebab などのケース変換とスラッグ生成を一括で。コピーも即対応。",
+  "icon": "type",
+  "color": "#f43f5e",
+  "tags": ["ツール", "テキスト", "整形", "開発"]
+}

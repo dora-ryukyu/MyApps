@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>単位コンバーター — MyApps</title>
+    <meta name="description" content="長さ・重さ・温度などを即変換。精度設定とスワップ対応の単位コンバーター。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Unit Translator</p>
+                <h1>単位コンバーター</h1>
+                <p class="lead">カテゴリ別に単位を切り替え、精度までコントロール。入力側を変えるだけで、もう一方が即座に追従します。</p>
+            </div>
+            <div class="hero-pills" aria-hidden="true">
+                <span>Length</span>
+                <span>Mass</span>
+                <span>Temp</span>
+                <span>Data</span>
+            </div>
+        </header>
+
+        <section class="panel converter-panel">
+            <div class="category-tabs" id="category-tabs"></div>
+
+            <div class="converter-grid">
+                <div class="field-card">
+                    <label class="field-label" for="value-a">値</label>
+                    <input id="value-a" type="text" inputmode="decimal" placeholder="0">
+                    <label class="field-label" for="unit-a">単位</label>
+                    <select id="unit-a"></select>
+                </div>
+
+                <button class="swap-btn" id="swap-btn" type="button" aria-label="単位を入れ替える">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="16 3 21 3 21 8"/>
+                        <line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="8 21 3 21 3 16"/>
+                        <line x1="15" y1="15" x2="3" y2="21"/>
+                    </svg>
+                </button>
+
+                <div class="field-card">
+                    <label class="field-label" for="value-b">結果</label>
+                    <input id="value-b" type="text" inputmode="decimal" placeholder="0">
+                    <label class="field-label" for="unit-b">単位</label>
+                    <select id="unit-b"></select>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="precision-control">
+                    <label class="field-label" for="precision">小数点以下</label>
+                    <select id="precision">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="6">6</option>
+                    </select>
+                </div>
+                <p class="formula" id="formula">1 m = 100 cm</p>
+            </div>
+        </section>
+
+        <section class="panel quick-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>クイック変換</h2>
+                    <p class="panel-sub">よく使う変換をワンクリックで確認。</p>
+                </div>
+            </div>
+            <div class="quick-grid" id="quick-list"></div>
+        </section>
+    </main>
+
+    <script src="../../shared/header.js"
+        data-app-name="単位コンバーター"
+        data-app-icon="calculator"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

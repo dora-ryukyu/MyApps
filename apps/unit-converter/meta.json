@@ -1,0 +1,8 @@
+﻿{
+  "id": "unit-converter",
+  "name": "単位コンバーター",
+  "description": "長さ・重さ・温度などを即変換。精度設定とスワップ対応の単位ツール。",
+  "icon": "calculator",
+  "color": "#14b8a6",
+  "tags": ["ツール", "変換", "計算"]
+}

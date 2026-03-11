@@ -1,0 +1,8 @@
+﻿{
+  "id": "csv-tsv-inspector",
+  "name": "CSV/TSV インスペクタ",
+  "description": "貼り付けた表を自動解析。列の型推定・空欄率・ユニーク数を可視化し、JSON/Markdown に変換。",
+  "icon": "table",
+  "color": "#16a34a",
+  "tags": ["ツール", "開発", "データ", "表"]
+}

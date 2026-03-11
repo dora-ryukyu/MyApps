@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV/TSV インスペクタ — MyApps</title>
+    <meta name="description" content="貼り付けた表データを自動解析。列の型推定、空欄率、ユニーク数を可視化し、JSON/Markdown に変換します。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Data Inspector</p>
+                <h1>CSV/TSV インスペクタ</h1>
+                <p class="lead">表データの健康診断を即実行。型推定・空欄率・ユニーク数をまとめて把握し、必要なら JSON/Markdown に変換。</p>
+            </div>
+            <div class="hero-stat" aria-hidden="true">
+                <div>
+                    <span>Scan</span>
+                    <strong>Columns</strong>
+                </div>
+                <div>
+                    <span>Reveal</span>
+                    <strong>Patterns</strong>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid-two">
+            <section class="panel input-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>入力</h2>
+                        <p class="panel-sub">CSV/TSV を貼り付けるだけで解析が始まります。</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ghost" id="btn-sample" type="button">サンプル</button>
+                        <button class="btn btn-ghost" id="btn-clear" type="button">クリア</button>
+                    </div>
+                </div>
+
+                <div class="control-row">
+                    <label class="field-label" for="delimiter-select">区切り文字</label>
+                    <select id="delimiter-select">
+                        <option value="auto">自動判定</option>
+                        <option value=",">カンマ (,)</option>
+                        <option value="\t">タブ (TSV)</option>
+                        <option value=";">セミコロン (;)</option>
+                        <option value="|">パイプ (|)</option>
+                    </select>
+
+                    <label class="check">
+                        <input id="opt-header" type="checkbox" checked>
+                        <span>1行目をヘッダー扱い</span>
+                    </label>
+                    <label class="check">
+                        <input id="opt-trim" type="checkbox" checked>
+                        <span>前後の空白をトリム</span>
+                    </label>
+                </div>
+
+                <textarea id="input-data" placeholder="name,score,active" spellcheck="false"></textarea>
+                <p class="hint" id="input-info">まだデータがありません。</p>
+            </section>
+
+            <section class="panel stats-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>概要</h2>
+                        <p class="panel-sub">全体像と列ごとの特徴を確認します。</p>
+                    </div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">行数</span>
+                        <strong id="stat-rows">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">列数</span>
+                        <strong id="stat-cols">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">空欄</span>
+                        <strong id="stat-empty">0</strong>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">充填率</span>
+                        <strong id="stat-fill">0%</strong>
+                    </div>
+                </div>
+
+                <div class="column-table">
+                    <div class="column-head">
+                        <span>列</span>
+                        <span>型</span>
+                        <span>空欄</span>
+                        <span>ユニーク</span>
+                        <span>最大長</span>
+                    </div>
+                    <div id="column-body" class="column-body"></div>
+                </div>
+            </section>
+        </div>
+
+        <section class="panel preview-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>プレビュー</h2>
+                    <p class="panel-sub">先頭 50 行までを表示します。</p>
+                </div>
+            </div>
+            <div class="table-wrap" id="preview-table"></div>
+        </section>
+
+        <section class="panel export-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>変換</h2>
+                    <p class="panel-sub">整形済みデータをそのままコピーできます。</p>
+                </div>
+            </div>
+            <div class="export-grid">
+                <div class="export-card">
+                    <div class="export-head">
+                        <h3>JSON</h3>
+                        <button class="btn btn-ghost" id="btn-copy-json" type="button">コピー</button>
+                    </div>
+                    <textarea id="export-json" readonly spellcheck="false"></textarea>
+                </div>
+                <div class="export-card">
+                    <div class="export-head">
+                        <h3>Markdown</h3>
+                        <button class="btn btn-ghost" id="btn-copy-md" type="button">コピー</button>
+                    </div>
+                    <textarea id="export-md" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../shared/header.js"
+        data-app-name="CSV/TSV インスペクタ"
+        data-app-icon="table"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

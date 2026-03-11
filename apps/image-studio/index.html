@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像編集スタジオ — MyApps</title>
+    <meta name="description" content="スマホ標準以上の画像編集をブラウザで。トリミング、回転、補正、ローカル調整、修復、書き出しまで。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <section class="panel top-bar">
+            <div class="top-left">
+                <label class="btn btn-primary" for="file-input">画像を読み込む</label>
+                <input id="file-input" type="file" accept="image/*" hidden>
+                <button class="btn btn-ghost" id="btn-sample" type="button">サンプル</button>
+                <button class="btn btn-ghost" id="btn-revert" type="button">元に戻す</button>
+            </div>
+            <div class="top-center">
+                <button class="btn btn-ghost" id="btn-undo" type="button">Undo</button>
+                <button class="btn btn-ghost" id="btn-redo" type="button">Redo</button>
+                <button class="btn btn-ghost" id="btn-fit" type="button">Fit</button>
+                <button class="btn btn-ghost" id="btn-actual" type="button">100%</button>
+            </div>
+            <div class="top-right">
+                <div class="status" id="status">画像が未読み込みです</div>
+            </div>
+        </section>
+
+        <section class="editor">
+            <aside class="tool-sidebar">
+                <div class="tool-group">
+                    <button class="tool-btn active" data-tool="geometry">ジオメトリ</button>
+                    <button class="tool-btn" data-tool="crop">トリミング</button>
+                    <button class="tool-btn" data-tool="adjust">色補正</button>
+                    <button class="tool-btn" data-tool="filters">フィルタ</button>
+                    <button class="tool-btn" data-tool="local">ローカル調整</button>
+                    <button class="tool-btn" data-tool="heal">修復</button>
+                    <button class="tool-btn" data-tool="text">テキスト</button>
+                    <button class="tool-btn" data-tool="export">書き出し</button>
+                </div>
+            </aside>
+
+            <div class="canvas-area" id="canvas-area">
+                <div class="canvas-stage" id="canvas-stage">
+                    <canvas id="editor-canvas"></canvas>
+                    <canvas id="overlay-canvas"></canvas>
+                    <div class="empty-state" id="empty-state">
+                        <h3>画像をドラッグ＆ドロップ</h3>
+                        <p>または「画像を読み込む」から開始</p>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="inspector">
+                <div class="tool-panel active" data-panel="geometry">
+                    <h2>ジオメトリ</h2>
+                    <div class="control-row">
+                    <button class="btn btn-ghost" id="btn-rotate-left">左回転 90°</button>
+                    <button class="btn btn-ghost" id="btn-rotate-right">右回転 90°</button>
+                    </div>
+                    <div class="control-row">
+                        <button class="btn btn-ghost" id="btn-flip-x">左右反転</button>
+                        <button class="btn btn-ghost" id="btn-flip-y">上下反転</button>
+                    </div>
+                    <label class="field-label" for="straighten">水平補正</label>
+                    <input id="straighten" type="range" min="-10" max="10" step="0.1" value="0">
+                    <div class="value-row"><span>角度</span><strong id="straighten-val">0°</strong></div>
+
+                    <div class="divider"></div>
+                    <label class="field-label" for="perspective-x">パースペクティブ (左右)</label>
+                    <input id="perspective-x" type="range" min="-0.6" max="0.6" step="0.01" value="0">
+                    <label class="field-label" for="perspective-y">パースペクティブ (上下)</label>
+                    <input id="perspective-y" type="range" min="-0.6" max="0.6" step="0.01" value="0">
+
+                    <div class="mini-preview">
+                        <canvas id="perspective-preview"></canvas>
+                        <p>ドラッグで四隅を調整</p>
+                    </div>
+                    <button class="btn btn-ghost" id="btn-reset-geometry">ジオメトリをリセット</button>
+                </div>
+
+                <div class="tool-panel" data-panel="crop">
+                    <h2>トリミング</h2>
+                    <label class="field-label" for="crop-ratio">アスペクト比</label>
+                    <select id="crop-ratio">
+                        <option value="free">自由</option>
+                        <option value="1:1">1:1</option>
+                        <option value="4:3">4:3</option>
+                        <option value="3:2">3:2</option>
+                        <option value="16:9">16:9</option>
+                    </select>
+                    <div class="control-row">
+                        <button class="btn btn-primary" id="btn-apply-crop">適用</button>
+                        <button class="btn btn-ghost" id="btn-reset-crop">リセット</button>
+                    </div>
+                    <p class="hint">ドラッグで範囲調整。角のハンドルで拡大縮小。</p>
+                </div>
+
+                <div class="tool-panel" data-panel="adjust">
+                    <h2>色補正</h2>
+                    <div class="slider-group" id="adjust-sliders"></div>
+                    <button class="btn btn-ghost" id="btn-reset-adjust">補正をリセット</button>
+                </div>
+
+                <div class="tool-panel" data-panel="filters">
+                    <h2>フィルタ</h2>
+                    <div class="filter-grid" id="filter-grid"></div>
+                </div>
+
+                <div class="tool-panel" data-panel="local">
+                    <h2>ローカル調整</h2>
+                    <label class="field-label" for="local-mode">種類</label>
+                    <select id="local-mode">
+                        <option value="exposure">露出</option>
+                        <option value="saturation">彩度</option>
+                    </select>
+                    <label class="field-label" for="local-amount">効果量</label>
+                    <input id="local-amount" type="range" min="-1" max="1" step="0.01" value="0.3">
+                    <label class="field-label" for="brush-size">ブラシサイズ</label>
+                    <input id="brush-size" type="range" min="10" max="200" step="1" value="60">
+                    <label class="field-label" for="brush-strength">ブラシ強度</label>
+                    <input id="brush-strength" type="range" min="0.05" max="1" step="0.05" value="0.4">
+                    <label class="check">
+                        <input id="brush-erase" type="checkbox">
+                        <span>消しゴム</span>
+                    </label>
+                    <label class="check">
+                        <input id="show-mask" type="checkbox">
+                        <span>マスク表示</span>
+                    </label>
+                    <button class="btn btn-ghost" id="btn-clear-local">ローカル調整をクリア</button>
+                </div>
+
+                <div class="tool-panel" data-panel="heal">
+                    <h2>修復 (クローン)</h2>
+                    <p class="hint">Alt + クリックでソース指定 → ドラッグで修復</p>
+                    <label class="field-label" for="heal-size">ブラシサイズ</label>
+                    <input id="heal-size" type="range" min="10" max="200" step="1" value="40">
+                    <label class="field-label" for="heal-opacity">強度</label>
+                    <input id="heal-opacity" type="range" min="0.1" max="1" step="0.05" value="0.8">
+                    <button class="btn btn-ghost" id="btn-clear-heal">修復をクリア</button>
+                </div>
+
+                <div class="tool-panel" data-panel="text">
+                    <h2>テキスト</h2>
+                    <label class="field-label" for="text-input">テキスト</label>
+                    <input id="text-input" type="text" placeholder="テキストを入力">
+                    <label class="field-label" for="text-size">サイズ</label>
+                    <input id="text-size" type="range" min="12" max="96" step="1" value="36">
+                    <label class="field-label" for="text-color">カラー</label>
+                    <input id="text-color" type="color" value="#ffffff">
+                    <label class="field-label" for="text-opacity">不透明度</label>
+                    <input id="text-opacity" type="range" min="0.2" max="1" step="0.05" value="1">
+                    <label class="field-label" for="text-weight">太さ</label>
+                    <select id="text-weight">
+                        <option value="400">Regular</option>
+                        <option value="600" selected>Semibold</option>
+                        <option value="700">Bold</option>
+                    </select>
+                    <div class="control-row">
+                        <button class="btn btn-primary" id="btn-add-text">追加</button>
+                        <button class="btn btn-ghost" id="btn-remove-text">削除</button>
+                    </div>
+                    <div class="layer-list" id="text-layer-list"></div>
+                    <p class="hint">テキストをドラッグして配置。</p>
+                </div>
+
+                <div class="tool-panel" data-panel="export">
+                    <h2>書き出し</h2>
+                    <label class="field-label" for="export-format">フォーマット</label>
+                    <select id="export-format">
+                        <option value="image/png">PNG</option>
+                        <option value="image/jpeg">JPEG</option>
+                        <option value="image/webp">WebP</option>
+                    </select>
+                    <label class="field-label" for="export-quality">品質 (JPEG/WebP)</label>
+                    <input id="export-quality" type="range" min="0.4" max="1" step="0.05" value="0.9">
+                    <label class="field-label" for="export-size">サイズ</label>
+                    <select id="export-size">
+                        <option value="original">オリジナル</option>
+                        <option value="preview">プレビュー</option>
+                    </select>
+                    <label class="field-label" for="export-bg">背景色 (透過不可時)</label>
+                    <input id="export-bg" type="color" value="#ffffff">
+                    <button class="btn btn-primary" id="btn-export">ダウンロード</button>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <script src="../../shared/header.js"
+        data-app-name="画像編集スタジオ"
+        data-app-icon="image"></script>
+    <script src="script.js"></script>
+</body>
+</html>

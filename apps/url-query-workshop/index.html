@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL クエリ工房 — MyApps</title>
+    <meta name="description" content="URLの解析・クエリ編集・再生成を一画面で。ソートや空値保持、+/%20 変換にも対応。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">URL / Query Builder</p>
+                <h1>URL クエリ工房</h1>
+                <p class="lead">URL を分解して、クエリを細部まで整える。キー順ソートや空値保持にも対応した一枚完結の編集台。</p>
+            </div>
+            <div class="hero-badge" aria-hidden="true">
+                <span>Parse</span>
+                <span>Refine</span>
+                <span>Ship</span>
+            </div>
+        </header>
+
+        <section class="top-grid">
+            <div class="panel input-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>入力</h2>
+                        <p class="panel-sub">URL またはクエリ文字列を貼り付けてください。</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ghost" id="btn-sample" type="button">サンプル</button>
+                        <button class="btn btn-ghost" id="btn-clear" type="button">クリア</button>
+                        <button class="btn btn-primary" id="btn-parse" type="button">解析</button>
+                    </div>
+                </div>
+                <label class="field-label" for="url-input">URL / クエリ</label>
+                <textarea id="url-input" placeholder="https://example.com/search?q=glassmorphism&lang=ja#section" spellcheck="false"></textarea>
+
+                <div class="split-row">
+                    <div class="field">
+                        <label class="field-label" for="base-input">ベースURL</label>
+                        <input id="base-input" type="text" placeholder="https://example.com/search">
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="hash-input">ハッシュ</label>
+                        <input id="hash-input" type="text" placeholder="section">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel output-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>出力</h2>
+                        <p class="panel-sub">生成された URL をすぐにコピーできます。</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ghost" id="btn-copy-query" type="button">クエリのみ</button>
+                        <button class="btn btn-primary" id="btn-copy-url" type="button">URL をコピー</button>
+                    </div>
+                </div>
+                <label class="field-label" for="url-output">生成URL</label>
+                <textarea id="url-output" readonly spellcheck="false"></textarea>
+                <div class="stat-row">
+                    <div class="stat">
+                        <span class="stat-label">パラメータ数</span>
+                        <strong id="stat-count">0</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">URL 長</span>
+                        <strong id="stat-length">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel options-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>オプション</h2>
+                        <p class="panel-sub">表示や生成ルールを切り替えます。</p>
+                    </div>
+                </div>
+                <div class="option-list">
+                    <label class="check">
+                        <input id="opt-sort" type="checkbox">
+                        <span>キー名でソート</span>
+                    </label>
+                    <label class="check">
+                        <input id="opt-keep-empty" type="checkbox" checked>
+                        <span>空値を保持 (key=)</span>
+                    </label>
+                    <label class="check">
+                        <input id="opt-plus-space" type="checkbox" checked>
+                        <span>スペースを + で表現</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>パラメータ</h2>
+                    <p class="panel-sub">キーと値を直接編集できます。行を増やして自由に組み立ててください。</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-primary" id="btn-add" type="button">行を追加</button>
+                </div>
+            </div>
+            <div class="param-header">
+                <span>キー</span>
+                <span>値</span>
+                <span class="param-actions-label">操作</span>
+            </div>
+            <div id="param-rows" class="param-rows"></div>
+        </section>
+    </main>
+
+    <script src="../../shared/header.js"
+        data-app-name="URL クエリ工房"
+        data-app-icon="code"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+
