@@ -1,8 +1,8 @@
 {
   "id": "privacy-filter",
   "name": "Privacy Filter",
-  "description": "On-device PII detection and masking using OpenAI Privacy Filter model.",
+  "description": "OpenAI Privacy Filterを用いたデバイス上での個人情報(PII)の検出とマスキング。",
   "icon": "shield",
   "color": "#10b981",
-  "tags": ["AI", "Security", "Privacy", "Text"]
+  "tags": ["AI", "セキュリティ", "プライバシー", "テキスト"]
 }
