@@ -1,0 +1,8 @@
+{
+  "id": "privacy-filter",
+  "name": "Privacy Filter",
+  "description": "On-device PII detection and masking using OpenAI Privacy Filter model.",
+  "icon": "shield",
+  "color": "#10b981",
+  "tags": ["AI", "Security", "Privacy", "Text"]
+}
