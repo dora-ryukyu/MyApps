@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OGG to WAV Converter | MyApps</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+  <!-- JSZip -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <main class="container">
+    <div class="card hero-card">
+      <div class="icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-audio"><path d="M17.5 22h.5c.5 0 1-.2 1.4-.6.4-.4.6-.9.6-1.4V7.5L14.5 2H6c-.5 0-1 .2-1.4.6C4.2 3 4 3.5 4 4v3"/><polyline points="14 2 14 8 20 8"/><path d="M10 20v-1a2 2 0 1 1 4 0v1a2 2 0 1 1-4 0Z"/><path d="M6 20v-1a2 2 0 1 0-4 0v1a2 2 0 1 0 4 0Z"/><path d="M2 19v-3a6 6 0 0 1 12 0v3"/></svg>
+      </div>
+      <h1 class="title">OGG to WAV Converter</h1>
+      <p class="subtitle">ZIPファイルまたは複数のOGGファイルをアップロードすると、ブラウザ内で高速にWAVに変換し、ZIPでまとめてダウンロードできます。フォルダ構造も保持されます。</p>
+      
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" multiple accept=".ogg, audio/ogg, .zip, application/zip" hidden />
+        <div class="drop-content">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+          <span class="drop-title">クリックまたはドラッグ＆ドロップ</span>
+          <span class="drop-hint">対応形式: .ogg または展開前フォルダの .zip</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card status-card" id="status-card" style="display: none;">
+      <div class="status-header">
+        <h2 class="status-title">変換ステータス</h2>
+        <span class="status-badge" id="status-badge">待機中</span>
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-info">
+          <span id="progress-text">準備完了</span>
+          <span id="progress-count">0 / 0</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </div>
+
+      <div class="action-container" id="action-container" style="display: none;">
+        <button id="download-btn" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          ZIPでダウンロード (<span id="download-size"></span>)
+        </button>
+      </div>
+      
+      <div class="file-list" id="file-list">
+        <!-- JSでファイルごとのステータスを追加 -->
+      </div>
+    </div>
+  </main>
+  <script src="../../shared/header.js" data-app-name="OGG to WAV" data-app-icon="file-audio" data-app-color="#10b981"></script>
+  <script src="script.js"></script>
+</body>
+</html>

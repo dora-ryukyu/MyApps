@@ -401,4 +401,4 @@ MyApps/
 | `description` | ✅   | 1〜2行の説明                              |
 | `icon`        | ❌   | Lucide Icons 名（未指定時 `zap`）         |
 | `color`       | ❌   | テーマカラー HEX（未指定時 `--c-accent`） |
-| `tags`        | ❌   | フィルタ用タグ配列                        |
+| `tags`        | ❌   | フィルタ用タグ配列、日本語表記            |

@@ -1,0 +1,8 @@
+{
+  "id": "audio-converter",
+  "name": "Audio Converter",
+  "description": "ZIP内の大量の音声ファイル（OGG/MP3/M4A/WAV）を一気にWAVやMP3に変換し、ZIPでダウンロードします。",
+  "icon": "audio-lines",
+  "color": "#8b5cf6",
+  "tags": ["音声", "変換", "ツール"]
+}
