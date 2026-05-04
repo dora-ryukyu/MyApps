@@ -9,6 +9,7 @@ const statusBadge = document.getElementById('status-badge');
 const actionContainer = document.getElementById('action-container');
 const downloadBtn = document.getElementById('download-btn');
 const downloadSizeSpan = document.getElementById('download-size');
+const outputFormatSelect = document.getElementById('output-format');
 
 let audioContext = null;
 let currentZipBlob = null;
@@ -20,6 +21,8 @@ const icons = {
   done: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   error: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
 };
+
+const audioExtensions = ['.ogg', '.mp3', '.m4a', '.wav', '.flac', '.aac'];
 
 // Drag and drop events
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -58,6 +61,11 @@ function formatBytes(bytes, decimals = 2) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+function isAudioFile(filename) {
+  const lower = filename.toLowerCase();
+  return audioExtensions.some(ext => lower.endsWith(ext));
+}
+
 async function handleFiles(files) {
   if (files.length === 0) return;
   
@@ -74,7 +82,7 @@ async function handleFiles(files) {
   progressBar.style.width = '0%';
   currentZipBlob = null;
   
-  let oggFiles = []; // { name: string, data: ArrayBuffer, path: string }
+  let audioFiles = []; // { name: string, data: ArrayBuffer, path: string }
   
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -85,9 +93,9 @@ async function handleFiles(files) {
         const entries = Object.keys(zip.files);
         for (const relativePath of entries) {
           const zipEntry = zip.files[relativePath];
-          if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.ogg')) {
+          if (!zipEntry.dir && isAudioFile(relativePath)) {
             const data = await zipEntry.async('arraybuffer');
-            oggFiles.push({
+            audioFiles.push({
               name: relativePath.split('/').pop(),
               path: relativePath,
               data: data
@@ -98,9 +106,9 @@ async function handleFiles(files) {
         console.error('ZIP load error:', err);
         alert(`ZIPファイルの展開に失敗しました: ${file.name}`);
       }
-    } else if (file.name.toLowerCase().endsWith('.ogg')) {
+    } else if (isAudioFile(file.name)) {
       const data = await file.arrayBuffer();
-      oggFiles.push({
+      audioFiles.push({
         name: file.name,
         path: file.name,
         data: data
@@ -108,19 +116,20 @@ async function handleFiles(files) {
     }
   }
   
-  if (oggFiles.length === 0) {
+  if (audioFiles.length === 0) {
     statusBadge.className = 'status-badge';
     statusBadge.textContent = '待機中';
-    progressText.textContent = 'OGGファイルが見つかりませんでした。';
+    progressText.textContent = '対応する音声ファイルが見つかりませんでした。';
     return;
   }
   
-  await processFiles(oggFiles);
+  await processFiles(audioFiles);
 }
 
 async function processFiles(files) {
+  const targetFormat = outputFormatSelect.value;
   statusBadge.textContent = '変換中...';
-  progressText.textContent = 'WAVに変換中...';
+  progressText.textContent = `${targetFormat.toUpperCase()}に変換中...`;
   
   // Create UI list
   files.forEach((f, idx) => {
@@ -130,7 +139,6 @@ async function processFiles(files) {
     
     const nameEl = document.createElement('div');
     nameEl.className = 'file-name';
-    // Adding zero-width space after slashes helps break words for long paths
     nameEl.innerHTML = '&lrm;' + f.path.replace(/\//g, '/<wbr>');
     nameEl.title = f.path;
     
@@ -156,19 +164,27 @@ async function processFiles(files) {
     statusEl.className = 'file-status status-converting';
     statusEl.innerHTML = icons.converting;
     
-    // Auto scroll list
     const itemEl = document.getElementById(`file-item-${i}`);
     itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
     try {
-      // Decode OGG
+      // Decode audio
       const audioBuffer = await audioContext.decodeAudioData(file.data);
-      // Encode WAV
-      const wavBuffer = audioBufferToWav(audioBuffer);
       
-      // Change extension in path
-      const outPath = file.path.replace(/\.ogg$/i, '.wav');
-      outputZip.file(outPath, wavBuffer);
+      let outBuffer;
+      let ext;
+      
+      if (targetFormat === 'wav') {
+        outBuffer = audioBufferToWav(audioBuffer);
+        ext = '.wav';
+      } else if (targetFormat === 'mp3') {
+        outBuffer = audioBufferToMp3(audioBuffer);
+        ext = '.mp3';
+      }
+      
+      // Replace original extension with new extension
+      const outPath = file.path.replace(/\.[^/.]+$/, "") + ext;
+      outputZip.file(outPath, outBuffer);
       
       statusEl.className = 'file-status status-done';
       statusEl.innerHTML = icons.done;
@@ -198,13 +214,12 @@ async function processFiles(files) {
     downloadSizeSpan.textContent = formatBytes(blob.size);
     actionContainer.style.display = 'flex';
     
-    // Setup download button
     downloadBtn.onclick = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `converted_wavs_${Date.now()}.zip`;
+      a.download = `converted_audios_${Date.now()}.zip`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
@@ -219,7 +234,11 @@ async function processFiles(files) {
   }
 }
 
-// WAV Encoder
+// ==========================================
+// ENCODERS
+// ==========================================
+
+// --- WAV Encoder ---
 function audioBufferToWav(buffer, opt) {
   opt = opt || {};
   const numChannels = buffer.numberOfChannels;
@@ -269,7 +288,7 @@ function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
   writeString(view, 36, 'data');
   view.setUint32(40, samples.length * bytesPerSample, true);
   
-  if (format === 1) { // Raw PCM
+  if (format === 1) {
     floatTo16BitPCM(view, 44, samples);
   } else {
     writeFloat32(view, 44, samples);
@@ -295,4 +314,55 @@ function writeString(view, offset, string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
+}
+
+// --- MP3 Encoder (uses lamejs) ---
+function audioBufferToMp3(buffer) {
+  if (typeof lamejs === 'undefined') {
+    throw new Error('lamejs is not loaded');
+  }
+
+  const channels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  
+  const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128); // 128kbps
+  const mp3Data = [];
+
+  const left = buffer.getChannelData(0);
+  const right = channels > 1 ? buffer.getChannelData(1) : left;
+
+  const sampleBlockSize = 1152;
+  
+  // Float32 to Int16
+  const leftInt = new Int16Array(left.length);
+  const rightInt = new Int16Array(right.length);
+  for (let i = 0; i < left.length; i++) {
+    let sl = Math.max(-1, Math.min(1, left[i]));
+    let sr = Math.max(-1, Math.min(1, right[i]));
+    leftInt[i] = sl < 0 ? sl * 0x8000 : sl * 0x7FFF;
+    rightInt[i] = sr < 0 ? sr * 0x8000 : sr * 0x7FFF;
+  }
+
+  for (let i = 0; i < leftInt.length; i += sampleBlockSize) {
+    const leftChunk = leftInt.subarray(i, i + sampleBlockSize);
+    const rightChunk = rightInt.subarray(i, i + sampleBlockSize);
+    
+    let mp3buf;
+    if (channels === 2) {
+      mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+    } else {
+      mp3buf = mp3encoder.encodeBuffer(leftChunk);
+    }
+    
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf);
+    }
+  }
+
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) {
+    mp3Data.push(mp3buf);
+  }
+
+  return new Blob(mp3Data, { type: 'audio/mp3' }).arrayBuffer();
 }

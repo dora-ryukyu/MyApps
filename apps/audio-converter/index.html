@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OGG to WAV Converter | MyApps</title>
+  <title>Audio Converter | MyApps</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
   <link rel="stylesheet" href="style.css" />
   <script>
     document.documentElement.setAttribute(
@@ -15,22 +16,34 @@
   </script>
   <!-- JSZip -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- lamejs for MP3 encoding -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
 </head>
 <body>
   <main class="container">
     <div class="card hero-card">
       <div class="icon-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-audio"><path d="M17.5 22h.5c.5 0 1-.2 1.4-.6.4-.4.6-.9.6-1.4V7.5L14.5 2H6c-.5 0-1 .2-1.4.6C4.2 3 4 3.5 4 4v3"/><polyline points="14 2 14 8 20 8"/><path d="M10 20v-1a2 2 0 1 1 4 0v1a2 2 0 1 1-4 0Z"/><path d="M6 20v-1a2 2 0 1 0-4 0v1a2 2 0 1 0 4 0Z"/><path d="M2 19v-3a6 6 0 0 1 12 0v3"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-audio-lines"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
       </div>
-      <h1 class="title">OGG to WAV Converter</h1>
-      <p class="subtitle">ZIPファイルまたは複数のOGGファイルをアップロードすると、ブラウザ内で高速にWAVに変換し、ZIPでまとめてダウンロードできます。フォルダ構造も保持されます。</p>
+      <h1 class="title">Audio Converter</h1>
+      <p class="subtitle">ZIPファイルまたは複数の音声ファイルを一気に別の形式（WAV / MP3）に変換します。フォルダ構造も保持されます。</p>
       
+      <div class="settings-panel">
+        <label class="setting-label">
+          <span>出力形式:</span>
+          <select id="output-format" class="format-select">
+            <option value="wav">WAV</option>
+            <option value="mp3">MP3</option>
+          </select>
+        </label>
+      </div>
+
       <div class="drop-zone" id="drop-zone">
-        <input type="file" id="file-input" multiple accept=".ogg, audio/ogg, .zip, application/zip" hidden />
+        <input type="file" id="file-input" multiple accept=".ogg, .mp3, .m4a, .wav, .flac, audio/*, .zip, application/zip" hidden />
         <div class="drop-content">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
           <span class="drop-title">クリックまたはドラッグ＆ドロップ</span>
-          <span class="drop-hint">対応形式: .ogg または展開前フォルダの .zip</span>
+          <span class="drop-hint">対応形式: 各種音声 (mp3, ogg, wav, m4a等) または .zip</span>
         </div>
       </div>
     </div>
@@ -63,7 +76,7 @@
       </div>
     </div>
   </main>
-  <script src="../../shared/header.js" data-app-name="OGG to WAV" data-app-icon="file-audio" data-app-color="#10b981"></script>
+  <script src="../../shared/header.js" data-app-name="Audio Converter" data-app-icon="audio-lines" data-app-color="#8b5cf6"></script>
   <script src="script.js"></script>
 </body>
 </html>
