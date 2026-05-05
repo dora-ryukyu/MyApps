@@ -4,5 +4,5 @@
   "description": "単層/2層MLPの計算過程を可視化するワークシート",
   "icon": "brain",
   "color": "#8b5cf6",
-  "tags": ["AI", "Visualizer", "Math"]
+  "tags": ["AI", "可視化", "計算"]
 }
