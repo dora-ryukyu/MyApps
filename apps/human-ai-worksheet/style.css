@@ -70,12 +70,15 @@ body > .main-container {
 }
 
 .left-panel {
-  flex: 0 0 340px;
+  flex: 0 0 320px;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4, 1.5rem);
+  gap: var(--sp-4, 1rem);
   position: sticky;
-  top: 6rem; /* below header */
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  padding-bottom: 1rem;
 }
 
 .grid-container {
@@ -128,7 +131,7 @@ body > .main-container {
 }
 
 .btn {
-  padding: 0.5rem 1rem; 
+  padding: 0.4rem 0.5rem; 
   border-radius: 8px; 
   border: 1px solid var(--border); 
   background: rgba(128,128,128,0.1); 
