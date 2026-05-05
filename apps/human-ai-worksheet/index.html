@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Human AI Worksheet 🧠✏️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="main-container">
+    <div class="left-panel glass">
+      <div class="grid-container" id="pixel-grid"></div>
+      
+      <div class="controls">
+        <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;" id="example-btns">
+          <button class="btn" onclick="clearGrid()">Clear</button>
+        </div>
+        <div class="toggle-wrapper">
+          <span style="font-weight: 600; font-size: 0.9rem;">Auto Calculate</span>
+          <label class="switch">
+            <input type="checkbox" id="auto-calc-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="right-panel">
+      <div class="tabs">
+        <div class="tab active" id="tab-single" onclick="setMode('single')">単層MLP</div>
+        <div class="tab" id="tab-two" onclick="setMode('two')">2層MLP</div>
+      </div>
+      
+      <div class="equation-list" id="equation-container">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="../../shared/header.js" data-app-name="Human AI Worksheet" data-app-icon="brain" data-app-color="#8b5cf6"></script>
+  <script src="script.js"></script>
+</body>
+</html>

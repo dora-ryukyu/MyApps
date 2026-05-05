@@ -117,9 +117,16 @@ body {
 /* --- Tags --- */
 .tags {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 32px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tags::-webkit-scrollbar {
+  display: none;
 }
 .tag-btn {
   display: inline-block;
@@ -128,6 +135,8 @@ body {
   font-size: 13px;
   font-weight: 500;
   color: var(--c-text-2);
+  white-space: nowrap;
+  flex-shrink: 0;
   
   background: var(--c-surface-card);
   border: 1px solid var(--c-border-strong);
