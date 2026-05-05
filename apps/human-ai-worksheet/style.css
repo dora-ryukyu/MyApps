@@ -47,8 +47,8 @@ body > .main-container {
 .main-container {
   display: flex;
   flex: 1;
-  padding: var(--sp-6, 2rem);
-  gap: var(--sp-6, 2rem);
+  padding: var(--sp-4, 1rem);
+  gap: var(--sp-4, 1rem);
   max-width: var(--w-page, 1400px);
   margin: 0 auto;
   width: 100%;
@@ -70,10 +70,10 @@ body > .main-container {
 }
 
 .left-panel {
-  flex: 0 0 320px;
+  flex: 0 0 280px;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4, 1rem);
+  gap: 0.75rem;
   position: sticky;
   top: 5rem;
   max-height: calc(100vh - 6rem);
@@ -84,8 +84,8 @@ body > .main-container {
 .grid-container {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  padding: var(--sp-4, 1.5rem);
+  gap: 4px;
+  padding: 1rem;
   aspect-ratio: 1;
 }
 
@@ -112,7 +112,7 @@ body > .main-container {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: var(--text-muted);
   font-family: 'JetBrains Mono', monospace;
   pointer-events: none;
@@ -124,10 +124,10 @@ body > .main-container {
 }
 
 .controls {
-  padding: var(--sp-4, 1.5rem);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4, 1.5rem);
+  gap: 0.75rem;
 }
 
 .btn {
@@ -151,7 +151,7 @@ body > .main-container {
   align-items: center;
   justify-content: space-between;
   background: rgba(128,128,128,0.1);
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 8px;
 }
 
@@ -164,11 +164,11 @@ body > .main-container {
 
 /* Dashboard styles */
 .dashboard {
-  padding: 1.5rem 2rem;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 1rem;
   background: rgba(139, 92, 246, 0.1);
   border-color: rgba(139, 92, 246, 0.3);
   transition: opacity 0.3s ease;
@@ -190,7 +190,7 @@ body > .main-container {
   color: var(--text-muted);
 }
 .dashboard-result {
-  font-size: 4rem;
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--accent);
   line-height: 1;
@@ -261,10 +261,10 @@ body > .main-container {
 }
 
 .equation-row {
-  padding: 1rem;
+  padding: 0.5rem 0.75rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   transition: all 0.3s ease;
   flex-wrap: wrap;
 }
@@ -282,9 +282,9 @@ body > .main-container {
 
 .eq-label {
   font-weight: 600;
-  width: 100px;
+  width: 80px;
   flex-shrink: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .eq-terms {
@@ -297,14 +297,14 @@ body > .main-container {
 
 .term {
   font-family: 'JetBrains Mono', monospace;
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
   background: rgba(128,128,128,0.1);
   border: 1px solid rgba(128,128,128,0.2);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   transition: all 0.2s;
   display: flex;
-  gap: 0.4rem;
+  gap: 0.3rem;
   cursor: default;
 }
 
@@ -378,23 +378,23 @@ body > .main-container {
 }
 
 .eq-result {
-  min-width: 80px;
-  height: 40px;
-  border-radius: 8px;
+  min-width: 60px;
+  height: 32px;
+  border-radius: 6px;
   background: rgba(128,128,128,0.15);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 800;
   text-align: center;
-  line-height: 40px;
+  line-height: 32px;
   transition: all 0.3s;
   flex-shrink: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  padding: 0 5px;
 }
 
 .eq-result.winner-score {
@@ -409,7 +409,7 @@ body > .main-container {
   border: none; 
   color: var(--text); 
   text-align: center; 
-  font-size: 1.2rem; 
+  font-size: 1rem; 
   outline: none; 
   font-weight: 800;
   font-family: 'Inter', sans-serif;
@@ -422,9 +422,9 @@ body > .main-container {
 }
 
 .section-title {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: var(--primary);
-  margin: 1.5rem 0 0.5rem 0;
+  margin: 1rem 0 0.5rem 0;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -434,10 +434,10 @@ body > .main-container {
 .section-title span {
   background: var(--primary);
   color: white;
-  width: 24px; height: 24px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .switch {
