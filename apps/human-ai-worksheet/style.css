@@ -70,7 +70,7 @@ body > .main-container {
 }
 
 .left-panel {
-  flex: 0 0 280px;
+  flex: 0 0 300px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -78,6 +78,7 @@ body > .main-container {
   top: 5rem;
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 1rem;
 }
 

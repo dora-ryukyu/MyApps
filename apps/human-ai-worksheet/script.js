@@ -108,7 +108,7 @@
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(d => {
       const btn = document.createElement('button');
       btn.className = 'btn';
-      btn.innerText = `Draw ${d}`;
+      btn.innerText = d;
       btn.onclick = () => drawExample(d);
       c.appendChild(btn);
     });
