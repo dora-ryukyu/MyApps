@@ -201,32 +201,63 @@ async function processFiles(files) {
   progressCount.textContent = `${files.length} / ${files.length}`;
   
   if (successCount > 0) {
-    statusBadge.textContent = 'ZIP圧縮中...';
-    progressText.textContent = 'ダウンロード用のZIPを作成しています...';
-    
-    const blob = await outputZip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    currentZipBlob = blob;
-    
-    statusBadge.className = 'status-badge success';
-    statusBadge.textContent = '完了';
-    progressText.textContent = `${successCount} 個のファイルの変換が完了しました。`;
-    
-    downloadSizeSpan.textContent = formatBytes(blob.size);
-    actionContainer.style.display = 'flex';
-    
-    downloadBtn.onclick = () => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `converted_audios_${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    };
+    if (successCount === 1) {
+      // Single file: download directly without ZIP
+      const zipFiles = outputZip.files;
+      const fileName = Object.keys(zipFiles)[0];
+      const fileData = await zipFiles[fileName].async('arraybuffer');
+      const mimeType = targetFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+      const blob = new Blob([fileData], { type: mimeType });
+
+      statusBadge.className = 'status-badge success';
+      statusBadge.textContent = '完了';
+      progressText.textContent = '1 個のファイルの変換が完了しました。';
+
+      downloadSizeSpan.textContent = formatBytes(blob.size);
+      actionContainer.style.display = 'flex';
+
+      downloadBtn.onclick = () => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      };
+    } else {
+      // Multiple files: bundle as ZIP
+      statusBadge.textContent = 'ZIP圧縮中...';
+      progressText.textContent = 'ダウンロード用のZIPを作成しています...';
+
+      const blob = await outputZip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+      currentZipBlob = blob;
+
+      statusBadge.className = 'status-badge success';
+      statusBadge.textContent = '完了';
+      progressText.textContent = `${successCount} 個のファイルの変換が完了しました。`;
+
+      downloadSizeSpan.textContent = formatBytes(blob.size);
+      actionContainer.style.display = 'flex';
+
+      downloadBtn.onclick = () => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `converted_audios_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      };
+    }
   } else {
     statusBadge.className = 'status-badge';
     statusBadge.textContent = 'エラー';
