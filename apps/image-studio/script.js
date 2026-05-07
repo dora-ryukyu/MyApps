@@ -136,8 +136,11 @@
       activeId: null,
       bounds: [],
     },
+    masking: { strokes: [], active: false },
+    chromakey: { color: null, tolerance: 30, active: false },
     history: {
       undo: [],
+
       redo: [],
     },
     zoom: 1,
@@ -908,10 +911,17 @@
       healingCanvas = applyHealing(rotatedCanvas, state.heal.strokes);
     }
 
-    const localCtx = healingCanvas.getContext('2d');
-    const localData = localCtx.getImageData(0, 0, healingCanvas.width, healingCanvas.height);
-    const localAdjusted = applyLocalAdjustments(localData, healingCanvas.width, healingCanvas.height);
     localCtx.putImageData(localAdjusted, 0, 0);
+
+    // Apply Chromakey
+    if (state.chromakey && state.chromakey.active && state.chromakey.color) {
+      applyChromakey(healingCanvas);
+    }
+    
+    // Apply Masking
+    if (state.masking && state.masking.strokes.length) {
+      applyMasking(healingCanvas);
+    }
 
     drawText(healingCanvas);
 
@@ -1751,6 +1761,119 @@
       updatePerspectivePreview();
     });
   }
+
+  // --- Chromakey ---
+  function applyChromakey(canvas) {
+    const ctx = canvas.getContext('2d');
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = data.data;
+    const [r, g, b] = state.chromakey.color;
+    const tol = state.chromakey.tolerance;
+    for (let i = 0; i < d.length; i += 4) {
+      const dr = d[i] - r, dg = d[i+1] - g, db = d[i+2] - b;
+      if (Math.sqrt(dr*dr + dg*dg + db*db) < tol) d[i+3] = 0;
+    }
+    ctx.putImageData(data, 0, 0);
+  }
+
+  // --- Masking ---
+  function applyMasking(canvas) {
+    const ctx = canvas.getContext('2d');
+    state.masking.strokes.forEach(stroke => {
+      ctx.save();
+      ctx.beginPath();
+      if (stroke.points.length === 1) {
+        ctx.arc(stroke.points[0].x * canvas.width, stroke.points[0].y * canvas.height, stroke.size/2, 0, Math.PI*2);
+      } else {
+        ctx.moveTo(stroke.points[0].x * canvas.width, stroke.points[0].y * canvas.height);
+        stroke.points.forEach(p => ctx.lineTo(p.x * canvas.width, p.y * canvas.height));
+      }
+      ctx.lineWidth = stroke.size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (stroke.type === 'black') {
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+      } else {
+        // Fallback for blur/pixelate: just draw gray
+        ctx.strokeStyle = '#888';
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+
+  // Extension bindings
+  const maskType = $('mask-type');
+  const maskSize = $('mask-size');
+  $('btn-clear-masking')?.addEventListener('click', () => { state.masking.strokes = []; scheduleRender(); pushHistory(); });
+  
+  $('btn-apply-chroma')?.addEventListener('click', () => { state.chromakey.active = true; scheduleRender(); pushHistory(); });
+  $('btn-clear-chroma')?.addEventListener('click', () => { state.chromakey.active = false; state.chromakey.color = null; $('chroma-color-preview').style.background = '#fff'; scheduleRender(); pushHistory(); });
+  $('chroma-tolerance')?.addEventListener('input', (e) => { state.chromakey.tolerance = Number(e.target.value); if(state.chromakey.active) scheduleRender(); });
+
+  $('btn-export-base64')?.addEventListener('click', () => {
+    if (!state.image) return;
+    const result = buildPipeline(1);
+    const dataURL = result.output.toDataURL(exportFormat.value, Number(exportQuality.value));
+    navigator.clipboard.writeText(dataURL).then(() => alert('Base64をコピーしました'));
+  });
+
+  // Palette Extractor hook
+  $('btn-extract-palette')?.addEventListener('click', () => {
+    if (!state.image || !window.ColorThief) return;
+    const colorThief = new ColorThief();
+    const dominant = colorThief.getColor(state.image);
+    const palette = colorThief.getPalette(state.image, 8);
+    
+    function rgbToHex([r,g,b]) { return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(); }
+    const colors = [dominant, ...palette].filter((c, i, a) => a.findIndex(x => rgbToHex(x) === rgbToHex(c)) === i);
+    
+    $('palette-result').innerHTML = colors.map(rgb => {
+      const hex = rgbToHex(rgb);
+      return `<div style="width:48px;height:48px;background:${hex};border-radius:4px;cursor:pointer;border:1px solid #ccc" title="${hex}" onclick="navigator.clipboard.writeText('${hex}')"></div>`;
+    }).join('');
+  });
+
+  // Chroma color picker override inside canvas pointer down
+  const origHandlePointerDown = handleCanvasPointerDown;
+  handleCanvasPointerDown = function(event) {
+    if (state.tool === 'chromakey') {
+      const point = getCanvasPoint(event);
+      const fullPoint = toFullPoint(point);
+      const result = buildPipeline(state.previewScale);
+      const ctx = result.output.getContext('2d');
+      const x = fullPoint.x * result.output.width;
+      const y = fullPoint.y * result.output.height;
+      const data = ctx.getImageData(x, y, 1, 1).data;
+      state.chromakey.color = [data[0], data[1], data[2]];
+      $('chroma-color-preview').style.background = `rgb(${data[0]},${data[1]},${data[2]})`;
+      return;
+    }
+    if (state.tool === 'masking') {
+      isDrawing = true;
+      const fullPoint = toFullPoint(getCanvasPoint(event));
+      state.masking.strokes.push({
+        type: maskType.value,
+        size: Number(maskSize.value) / (state.fullSize.w || 1),
+        points: [{ ...fullPoint }]
+      });
+      scheduleRender();
+      return;
+    }
+    origHandlePointerDown(event);
+  };
+
+  const origHandlePointerMove = handleCanvasPointerMove;
+  handleCanvasPointerMove = function(event) {
+    if (state.tool === 'masking' && isDrawing) {
+      const stroke = state.masking.strokes[state.masking.strokes.length - 1];
+      stroke.points.push({ ...toFullPoint(getCanvasPoint(event)) });
+      scheduleRender();
+      return;
+    }
+    origHandlePointerMove(event);
+  };
 
   initSliders();
   initFilters();

@@ -1,8 +1,0 @@
-{
-  "id": "table-converter",
-  "name": "Excel表 → Markdown/LaTeX",
-  "description": "Excelからコピーした表をMarkdown・LaTeX・HTMLのテーブル記法に瞬時に変換。",
-  "icon": "table",
-  "color": "#6366f1",
-  "tags": ["ツール", "テキスト", "変換"]
-}

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja" data-theme="system">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像編集スタジオ — MyApps</title>
-    <meta name="description" content="スマホ標準以上の画像編集をブラウザで。トリミング、回転、補正、ローカル調整、修復、書き出しまで。">
+    <title>Image Studio Pro — MyApps</title>
+    <meta name="description" content="スマホ標準以上の画像編集に加え、機密マスキング、クロマキー透過、パレット抽出を備えた統合スタジオ。">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../../shared/base.css">
     <link rel="stylesheet" href="../../shared/header.css">
@@ -43,6 +43,9 @@
                     <button class="tool-btn" data-tool="local">ローカル調整</button>
                     <button class="tool-btn" data-tool="heal">修復</button>
                     <button class="tool-btn" data-tool="text">テキスト</button>
+                    <button class="tool-btn" data-tool="masking">マスキング</button>
+                    <button class="tool-btn" data-tool="chromakey">透過(クロマキー)</button>
+                    <button class="tool-btn" data-tool="palette">カラーパレット</button>
                     <button class="tool-btn" data-tool="export">書き出し</button>
                 </div>
             </aside>
@@ -172,6 +175,37 @@
                     <p class="hint">テキストをドラッグして配置。</p>
                 </div>
 
+                <div class="tool-panel" data-panel="masking">
+                    <h2>マスキング (機密保護)</h2>
+                    <label class="field-label" for="mask-type">種類</label>
+                    <select id="mask-type">
+                        <option value="black">黒塗り</option>
+                        <option value="blur">ぼかし</option>
+                        <option value="pixelate">モザイク</option>
+                    </select>
+                    <label class="field-label" for="mask-size">ブラシサイズ</label>
+                    <input id="mask-size" type="range" min="10" max="200" step="1" value="50">
+                    <p class="hint">ドラッグして対象部分をマスキング</p>
+                    <button class="btn btn-ghost" id="btn-clear-masking">マスキングをクリア</button>
+                </div>
+
+                <div class="tool-panel" data-panel="chromakey">
+                    <h2>クロマキー透過</h2>
+                    <p class="hint">画像内をクリックして透過色を選択</p>
+                    <label class="field-label" for="chroma-tolerance">許容値 (Tolerance)</label>
+                    <input id="chroma-tolerance" type="range" min="0" max="255" step="1" value="30">
+                    <div class="value-row"><span>対象色</span><div id="chroma-color-preview" style="width:24px;height:24px;background:#fff;border:1px solid #ccc;border-radius:4px;"></div></div>
+                    <button class="btn btn-primary" id="btn-apply-chroma" style="margin-top:16px;">透過適用</button>
+                    <button class="btn btn-ghost" id="btn-clear-chroma">元に戻す</button>
+                </div>
+
+                <div class="tool-panel" data-panel="palette">
+                    <h2>カラーパレット抽出</h2>
+                    <button class="btn btn-primary" id="btn-extract-palette">パレットを抽出</button>
+                    <div id="palette-result" style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;"></div>
+                    <p class="hint" style="margin-top:8px;">クリックでHEXをコピー</p>
+                </div>
+
                 <div class="tool-panel" data-panel="export">
                     <h2>書き出し</h2>
                     <label class="field-label" for="export-format">フォーマット</label>
@@ -179,6 +213,7 @@
                         <option value="image/png">PNG</option>
                         <option value="image/jpeg">JPEG</option>
                         <option value="image/webp">WebP</option>
+                        <option value="datauri">Base64 (Data URI)</option>
                     </select>
                     <label class="field-label" for="export-quality">品質 (JPEG/WebP)</label>
                     <input id="export-quality" type="range" min="0.4" max="1" step="0.05" value="0.9">
@@ -189,14 +224,18 @@
                     </select>
                     <label class="field-label" for="export-bg">背景色 (透過不可時)</label>
                     <input id="export-bg" type="color" value="#ffffff">
-                    <button class="btn btn-primary" id="btn-export">ダウンロード</button>
+                    <div class="control-row" style="margin-top: 16px;">
+                        <button class="btn btn-primary" id="btn-export">ダウンロード</button>
+                        <button class="btn btn-ghost" id="btn-export-base64" style="display:none;">Base64 コピー</button>
+                    </div>
                 </div>
             </aside>
         </section>
     </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     <script src="../../shared/header.js"
-        data-app-name="画像編集スタジオ"
+        data-app-name="Image Studio Pro"
         data-app-icon="image"></script>
     <script src="script.js"></script>
 </body>

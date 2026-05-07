@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja" data-theme="system">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,7 @@
         <header class="hero">
             <div>
                 <p class="eyebrow">Data Inspector</p>
-                <h1>CSV/TSV インスペクタ</h1>
+                <h1>Data Table Studio</h1>
                 <p class="lead">表データの健康診断を即実行。型推定・空欄率・ユニーク数をまとめて把握し、必要なら JSON/Markdown に変換。</p>
             </div>
             <div class="hero-stat" aria-hidden="true">
@@ -142,12 +142,26 @@
                     </div>
                     <textarea id="export-md" readonly spellcheck="false"></textarea>
                 </div>
+                <div class="export-card">
+                    <div class="export-head">
+                        <h3>LaTeX</h3>
+                        <button class="btn btn-ghost" id="btn-copy-latex" type="button">コピー</button>
+                    </div>
+                    <textarea id="export-latex" readonly spellcheck="false"></textarea>
+                </div>
+                <div class="export-card">
+                    <div class="export-head">
+                        <h3>HTML</h3>
+                        <button class="btn btn-ghost" id="btn-copy-html" type="button">コピー</button>
+                    </div>
+                    <textarea id="export-html" readonly spellcheck="false"></textarea>
+                </div>
             </div>
         </section>
     </main>
 
     <script src="../../shared/header.js"
-        data-app-name="CSV/TSV インスペクタ"
+        data-app-name="Data Table Studio"
         data-app-icon="table"></script>
     <script src="script.js"></script>
 </body>

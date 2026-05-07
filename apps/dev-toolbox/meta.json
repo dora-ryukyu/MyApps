@@ -1,0 +1,8 @@
+{
+  "id": "dev-toolbox",
+  "name": "Dev Toolbox",
+  "description": "UUID生成、Unixタイムスタンプ変換、基数変換など、開発でよく使う小規模ユーティリティ。",
+  "icon": "wrench",
+  "color": "#6366f1",
+  "tags": ["開発", "ツール", "変換", "生成"]
+}

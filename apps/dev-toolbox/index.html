@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Toolbox — MyApps</title>
+    <meta name="description" content="UUID生成、Unixタイムスタンプ変換、基数変換など、開発でよく使う小規模ユーティリティ。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Developer Utilities</p>
+                <h1>Dev Toolbox</h1>
+                <p class="lead">開発中によく使う「ちょっとした変換ツール」の詰め合わせ。</p>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-target="tab-uuid">UUID 生成</button>
+            <button class="tab-btn" data-target="tab-unix">Unix Timestamp</button>
+            <button class="tab-btn" data-target="tab-numbase">基数変換</button>
+        </div>
+
+        <div class="tab-content active" id="tab-uuid">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>UUID (v4)</h2>
+                    <div class="panel-actions">
+                        <label for="uuid-count">生成数:</label>
+                        <input id="uuid-count" type="number" min="1" max="200" value="5" class="count-input">
+                        <button class="btn btn-accent" id="uuid-gen-btn" type="button">再生成</button>
+                    </div>
+                </div>
+                <div class="grid-two">
+                    <div class="uuid-list-container">
+                        <div id="uuid-list" class="uuid-list"></div>
+                    </div>
+                    <div>
+                        <div class="panel-head">
+                            <h3>Raw Text</h3>
+                            <button class="btn btn-ghost" id="uuid-copy-btn" type="button">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+                                <span>Copy All</span>
+                            </button>
+                        </div>
+                        <textarea id="uuid-output-raw" class="raw-textarea" readonly spellcheck="false"></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="tab-content" id="tab-unix">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>現在の時刻</h2>
+                </div>
+                <div class="current-grid">
+                    <div class="current-card">
+                        <span>UNIX エポック (秒)</span>
+                        <strong id="unix-current-ts" class="mono"></strong>
+                        <button class="btn btn-ghost btn-copy" data-target="unix-current-ts" type="button">コピー</button>
+                    </div>
+                    <div class="current-card">
+                        <span>ローカル日時</span>
+                        <strong id="unix-current-date"></strong>
+                        <p class="sub-label" id="unix-current-utc"></p>
+                    </div>
+                </div>
+
+                <div class="grid-two" style="margin-top: 1.5rem;">
+                    <div>
+                        <div class="panel-head">
+                            <h3>タイムスタンプ → 日時</h3>
+                        </div>
+                        <div class="control-row">
+                            <input id="unix-input-ts" type="text" class="mono input-large" placeholder="例: 1712030400">
+                            <select id="unix-input-unit">
+                                <option value="s">秒 (s)</option>
+                                <option value="ms">ミリ秒 (ms)</option>
+                            </select>
+                        </div>
+                        <div class="result-list">
+                            <div class="result-row">
+                                <span class="label">ローカル</span>
+                                <strong id="unix-res-local">----/--/-- --:--:--</strong>
+                            </div>
+                            <div class="result-row">
+                                <span class="label">UTC</span>
+                                <strong id="unix-res-utc">----/--/-- --:--:--</strong>
+                            </div>
+                            <div class="result-row">
+                                <span class="label">相対</span>
+                                <strong id="unix-res-rel">--</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="panel-head">
+                            <h3>日時 → タイムスタンプ</h3>
+                        </div>
+                        <div class="control-row">
+                            <input id="unix-input-date" type="datetime-local" step="1" class="input-large">
+                        </div>
+                        <div class="result-list">
+                            <div class="result-row">
+                                <span class="label">秒 (s)</span>
+                                <strong id="unix-res-ts-s" class="mono">0</strong>
+                                <button class="btn btn-ghost btn-icon-only btn-copy" data-target="unix-res-ts-s" type="button">コピー</button>
+                            </div>
+                            <div class="result-row">
+                                <span class="label">ミリ秒 (ms)</span>
+                                <strong id="unix-res-ts-ms" class="mono">0</strong>
+                                <button class="btn btn-ghost btn-icon-only btn-copy" data-target="unix-res-ts-ms" type="button">コピー</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="tab-content" id="tab-numbase">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>基数変換</h2>
+                    <p class="panel-sub">いずれかの枠に入力すると、他のすべてがリアルタイムに更新されます。</p>
+                </div>
+                <div class="converter-grid">
+                    <div class="input-group">
+                        <label for="num-v-bin">2進数 (Binary)</label>
+                        <input id="num-v-bin" class="mono" type="text" placeholder="101011" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-v-oct">8進数 (Octal)</label>
+                        <input id="num-v-oct" class="mono" type="text" placeholder="53" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-v-dec">10進数 (Decimal)</label>
+                        <input id="num-v-dec" class="mono" type="text" placeholder="43" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-v-hex">16進数 (Hexadecimal)</label>
+                        <input id="num-v-hex" class="mono" type="text" placeholder="2B" spellcheck="false" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-v-ascii">文字 (ASCII/Unicode)</label>
+                        <input id="num-v-ascii" class="mono" type="text" placeholder="+" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="../../shared/header.js" data-app-name="Dev Toolbox" data-app-icon="wrench"></script>
+    <script src="script.js"></script>
+</body>
+</html>

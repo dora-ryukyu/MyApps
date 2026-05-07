@@ -1,8 +1,0 @@
-{
-  "id": "text-laundry",
-  "name": "文章整形ランドリー",
-  "description": "PDFやOCRテキスト、メール引用などで発生する不要な改行やスペースを自動除去し、自然な文章に整形します。",
-  "icon": "scissors",
-  "color": "#0ea5e9",
-  "tags": ["ツール", "テキスト", "整形", "PDF"]
-}

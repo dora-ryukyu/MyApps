@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   'use strict';
 
   const $ = (id) => document.getElementById(id);
@@ -18,8 +18,12 @@
 
   const exportJsonEl = $('export-json');
   const exportMdEl = $('export-md');
+  const exportLatexEl = $('export-latex');
+  const exportHtmlEl = $('export-html');
   const btnCopyJson = $('btn-copy-json');
   const btnCopyMd = $('btn-copy-md');
+  const btnCopyLatex = $('btn-copy-latex');
+  const btnCopyHtml = $('btn-copy-html');
   const btnSample = $('btn-sample');
   const btnClear = $('btn-clear');
 
@@ -285,6 +289,68 @@ Erika,Marketing,85,true`;
     return [head, separator, ...body].join('\n');
   }
 
+  function escLaTeX(s) {
+    return (s || '').replace(/[&%$#_{}~^\\]/g, m => '\\' + m);
+  }
+
+  function buildLaTeX(headers, rows) {
+    if (!rows.length) return '';
+    const cols = headers.length;
+    const colSpec = Array(cols).fill('l').join(' ');
+    const lines = [];
+    lines.push('\\begin{table}[htbp]');
+    lines.push('  \\centering');
+    lines.push(`  \\begin{tabular}{${colSpec}}`);
+    lines.push('    \\hline');
+    
+    lines.push('    ' + headers.map(escLaTeX).join(' & ') + ' \\\\');
+    lines.push('    \\hline');
+
+    rows.slice(0, 50).forEach((row) => {
+      const cells = headers.map((_, c) => escLaTeX(row[c] ?? ''));
+      lines.push('    ' + cells.join(' & ') + ' \\\\');
+    });
+
+    lines.push('    \\hline');
+    lines.push('  \\end{tabular}');
+    lines.push('  \\caption{}');
+    lines.push('  \\label{tab:}');
+    lines.push('\\end{table}');
+
+    return lines.join('\n');
+  }
+
+  function escHTML(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function buildHTML(headers, rows) {
+    if (!rows.length) return '';
+    const cols = headers.length;
+    const lines = [];
+    lines.push('<table>');
+    lines.push('  <thead>');
+    lines.push('    <tr>');
+    for (let c = 0; c < cols; c++) {
+      lines.push(`      <th>${escHTML(headers[c])}</th>`);
+    }
+    lines.push('    </tr>');
+    lines.push('  </thead>');
+    lines.push('  <tbody>');
+    
+    rows.slice(0, 50).forEach((row) => {
+      lines.push('    <tr>');
+      for (let c = 0; c < cols; c++) {
+        lines.push(`      <td>${escHTML(row[c] ?? '')}</td>`);
+      }
+      lines.push('    </tr>');
+    });
+    lines.push('  </tbody>');
+    lines.push('</table>');
+
+    return lines.join('\n');
+  }
+
   async function copyText(text) {
     if (!text) return;
     try {
@@ -307,6 +373,8 @@ Erika,Marketing,85,true`;
       previewEl.innerHTML = '';
       exportJsonEl.value = '';
       exportMdEl.value = '';
+      exportLatexEl.value = '';
+      exportHtmlEl.value = '';
       return;
     }
 
@@ -337,6 +405,8 @@ Erika,Marketing,85,true`;
 
     exportJsonEl.value = buildJson(headers, data);
     exportMdEl.value = buildMarkdown(headers, data);
+    exportLatexEl.value = buildLaTeX(headers, data);
+    exportHtmlEl.value = buildHTML(headers, data);
 
     const label = delimiter === '\t' ? 'タブ' : delimiter;
     infoEl.textContent = `区切り文字: ${label} ｜ 行 ${stats.rowCount} / 列 ${stats.colCount}`;
@@ -355,6 +425,8 @@ Erika,Marketing,85,true`;
 
   btnCopyJson.addEventListener('click', () => copyText(exportJsonEl.value));
   btnCopyMd.addEventListener('click', () => copyText(exportMdEl.value));
+  btnCopyLatex.addEventListener('click', () => copyText(exportLatexEl.value));
+  btnCopyHtml.addEventListener('click', () => copyText(exportHtmlEl.value));
 
   btnSample.addEventListener('click', () => {
     inputEl.value = sample;

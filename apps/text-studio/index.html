@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Studio — MyApps</title>
+    <meta name="description" content="文章整形、文字数カウント、ケース・スラグ変換、全角・半角変換など、テキスト処理を統合した多機能スタジオ。">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../shared/base.css">
+    <link rel="stylesheet" href="../../shared/header.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+    </script>
+</head>
+
+<body>
+    <main class="app-main">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Text Utilities</p>
+                <h1>Text Studio</h1>
+                <p class="lead">あらゆるテキスト処理を1つの場所で。整形・変換・カウントなど。</p>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-target="tab-laundry">整形</button>
+            <button class="tab-btn" data-target="tab-case">Case & Slug</button>
+            <button class="tab-btn" data-target="tab-width">全角/半角</button>
+            <button class="tab-btn" data-target="tab-count">文字数カウント</button>
+        </div>
+
+        <div class="tab-content active" id="tab-laundry">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>テキスト整形</h2>
+                </div>
+                <div class="split-layout">
+                    <div class="pane">
+                        <div class="pane-header">
+                            <h3>入力テキスト</h3>
+                            <button class="btn btn-ghost" id="laundry-paste" type="button">Paste</button>
+                        </div>
+                        <textarea id="laundry-input" class="text-editor" placeholder="ここにテキストを貼り付けてください..."></textarea>
+                    </div>
+                    <div class="controls-pane">
+                        <h3>オプション</h3>
+                        <label class="check-label"><input type="checkbox" id="chk-space" checked> 先頭/末尾の空白を削除
+                            (trim)</label>
+                        <label class="check-label"><input type="checkbox" id="chk-multispace" checked>
+                            連続する空白を1つに統合</label>
+                        <label class="check-label"><input type="checkbox" id="chk-newline"> 連続する改行を1つに統合</label>
+                        <label class="check-label"><input type="checkbox" id="chk-emptyline"> 空行を削除</label>
+                        <label class="check-label"><input type="checkbox" id="chk-tab"> タブを空白(2文字)に変換</label>
+                        <label class="check-label"><input type="checkbox" id="chk-num"> 全角数字を半角に変換</label>
+
+                        <div class="actions">
+                            <button class="btn btn-primary" id="laundry-apply">整形する</button>
+                            <button class="btn btn-ghost" id="laundry-clear">クリア</button>
+                        </div>
+                    </div>
+                    <div class="pane">
+                        <div class="pane-header">
+                            <h3>出力結果</h3>
+                            <button class="btn btn-ghost" id="laundry-copy" type="button">Copy All</button>
+                        </div>
+                        <textarea id="laundry-output" class="text-editor" readonly></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="tab-content" id="tab-case">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>Case & Slug 変換</h2>
+                </div>
+                <div class="pane" style="margin-bottom: 1rem;">
+                    <input type="text" id="case-input" class="input-large" placeholder="my example text">
+                </div>
+                <div class="result-list" id="case-results">
+                    <!-- JS generated -->
+                </div>
+            </section>
+        </div>
+
+        <div class="tab-content" id="tab-width">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>全角 / 半角 変換</h2>
+                </div>
+                <div class="split-layout">
+                    <div class="pane">
+                        <textarea id="width-input" class="text-editor" placeholder="変換するテキスト..."></textarea>
+                    </div>
+                    <div class="controls-pane">
+                        <h3>変換モード</h3>
+                        <div class="radio-group">
+                            <label class="check-label"><input type="radio" name="width-mode" value="toHalf" checked> 全角
+                                → 半角</label>
+                            <label class="check-label"><input type="radio" name="width-mode" value="toFull"> 半角 →
+                                全角</label>
+                        </div>
+                        <h3>対象</h3>
+                        <label class="check-label"><input type="checkbox" id="w-chk-alpha" checked> 英字 (A-Z,
+                            a-z)</label>
+                        <label class="check-label"><input type="checkbox" id="w-chk-num" checked> 数字 (0-9)</label>
+                        <label class="check-label"><input type="checkbox" id="w-chk-sym" checked> 記号 (!, ?, +,
+                            etc.)</label>
+                        <label class="check-label"><input type="checkbox" id="w-chk-space" checked> スペース</label>
+                        <label class="check-label"><input type="checkbox" id="w-chk-kana"> カナ (半角カナ ↔ 全角カナ)</label>
+
+                        <div class="actions">
+                            <button class="btn btn-primary" id="width-apply">変換する</button>
+                        </div>
+                    </div>
+                    <div class="pane">
+                        <div class="pane-header">
+                            <button class="btn btn-ghost" id="width-copy" type="button" style="margin-left: auto;">Copy
+                                All</button>
+                        </div>
+                        <textarea id="width-output" class="text-editor" readonly></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="tab-content" id="tab-count">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>文字数カウント</h2>
+                </div>
+                <div class="split-layout">
+                    <div class="pane" style="flex: 2;">
+                        <textarea id="count-input" class="text-editor"
+                            placeholder="テキストを入力するとリアルタイムにカウントされます..."></textarea>
+                    </div>
+                    <div class="controls-pane stats-pane" style="flex: 1;">
+                        <div class="stat-box">
+                            <span class="stat-label">文字数 (空白含む)</span>
+                            <strong class="stat-val" id="count-total">0</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">文字数 (空白なし)</span>
+                            <strong class="stat-val" id="count-nospace">0</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">単語数 (英語)</span>
+                            <strong class="stat-val" id="count-words">0</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">行数</span>
+                            <strong class="stat-val" id="count-lines">0</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">バイト数 (UTF-8)</span>
+                            <strong class="stat-val" id="count-bytes">0</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">読了時間 (目安)</span>
+                            <strong class="stat-val" id="count-time">0秒</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="../../shared/header.js" data-app-name="Text Studio" data-app-icon="type"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
