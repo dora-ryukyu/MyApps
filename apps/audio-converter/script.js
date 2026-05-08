@@ -10,6 +10,7 @@ const actionContainer = document.getElementById('action-container');
 const downloadBtn = document.getElementById('download-btn');
 const downloadSizeSpan = document.getElementById('download-size');
 const outputFormatSelect = document.getElementById('output-format');
+const downloadLabel = document.getElementById('download-label');
 
 let audioContext = null;
 let currentZipBlob = null;
@@ -213,6 +214,7 @@ async function processFiles(files) {
       statusBadge.textContent = '完了';
       progressText.textContent = '1 個のファイルの変換が完了しました。';
 
+      downloadLabel.textContent = 'ダウンロード';
       downloadSizeSpan.textContent = formatBytes(blob.size);
       actionContainer.style.display = 'flex';
 
@@ -241,6 +243,7 @@ async function processFiles(files) {
       statusBadge.textContent = '完了';
       progressText.textContent = `${successCount} 個のファイルの変換が完了しました。`;
 
+      downloadLabel.textContent = 'ZIPでダウンロード';
       downloadSizeSpan.textContent = formatBytes(blob.size);
       actionContainer.style.display = 'flex';
 
