@@ -99,37 +99,59 @@ function getTopKProbabilities(logits, top_k, temperature, inputIds, repetitionPe
         probs[i] /= sumExp;
     }
     
-    // Top-Kの取得
-    const indices = Array.from({ length: vocabSize }, (_, i) => i);
-    indices.sort((a, b) => probs[b] - probs[a]); // 降順
+    // Top-Kの取得（Min-HeapによるO(V log K)の部分ソート）
+    const heap = []; // min-heap: [{ id, prob }], heap[0] is smallest
+    for (let i = 0; i < vocabSize; i++) {
+        if (heap.length < top_k) {
+            heap.push({ id: i, prob: probs[i] });
+            if (heap.length === top_k) {
+                // 一度だけmin-heap化
+                heap.sort((a, b) => a.prob - b.prob);
+            }
+        } else if (probs[i] > heap[0].prob) {
+            heap[0] = { id: i, prob: probs[i] };
+            // Sink down
+            let idx = 0;
+            const n = heap.length;
+            while (true) {
+                let smallest = idx;
+                const left = 2 * idx + 1;
+                const right = 2 * idx + 2;
+                if (left < n && heap[left].prob < heap[smallest].prob) smallest = left;
+                if (right < n && heap[right].prob < heap[smallest].prob) smallest = right;
+                if (smallest === idx) break;
+                [heap[idx], heap[smallest]] = [heap[smallest], heap[idx]];
+                idx = smallest;
+            }
+        }
+    }
     
-    const topKTokens = [];
-    for (let i = 0; i < Math.min(top_k, vocabSize); i++) {
-        const id = indices[i];
-        const prob = probs[id];
-        let tokenStr = tokenizer.decode([id]);
-        
+    // 降順にソート（K log K）してからトークンデコード
+    heap.sort((a, b) => b.prob - a.prob);
+    
+    const topKTokens = heap.map(item => {
+        let tokenStr = tokenizer.decode([item.id]);
         // 特殊なデコード処理（スペースや改行を見やすく）
         tokenStr = tokenStr.replace(/ /g, ' ').replace(/\n/g, '↵');
-        
-        topKTokens.push({
-            id: id,
+        return {
+            id: item.id,
             token: tokenStr,
-            prob: prob
-        });
-    }
+            prob: item.prob
+        };
+    });
     
     return topKTokens;
 }
 
 // メッセージハンドラ
 self.addEventListener('message', async (e) => {
-    const { type, prompt, inputIds, temperature = 0.1, topK = 50 } = e.data;
+    const { type, prompt, inputIds, generationId, temperature = 0.1, topK = 50 } = e.data;
     
     if (type === 'init') {
         try {
             await initModel();
         } catch (err) {
+            pastKeyValues = null;
             postMessage({ type: 'error', error: err.message });
         }
     } 
@@ -138,7 +160,6 @@ self.addEventListener('message', async (e) => {
             let inputs;
             if (inputIds) {
                 // 2回目以降：最新の1トークンのみを渡し、過去の計算結果(KVキャッシュ)を再利用する
-                // position_idsはTransformers.jsがattention_maskから自動生成するので明示指定不要
                 const lastTokenId = inputIds[inputIds.length - 1];
                 inputs = {
                     input_ids: new Tensor('int64', BigInt64Array.from([BigInt(lastTokenId)]), [1, 1]),
@@ -162,30 +183,28 @@ self.addEventListener('message', async (e) => {
             const outputs = await model(inputs);
             
             // ONNX出力( present_* )からDynamicCacheを構築して保存
-            //   通常のKV cache + LFM2のconv stateの両方が含まれる
             pastKeyValues = buildCacheFromOutputs(outputs, pastKeyValues);
             
             // ペナルティ計算用に入力ID全体を把握する
             let currentIdsForPenalty;
             if (inputIds) {
-                currentIdsForPenalty = inputIds; // 既に全体のID配列がある
+                currentIdsForPenalty = inputIds;
             } else {
-                currentIdsForPenalty = Array.from(inputs.input_ids.data).map(Number); // 初回
+                currentIdsForPenalty = Array.from(inputs.input_ids.data).map(Number);
             }
             
-            // LogitsからTop-Kを取得 (repetition_penalty=1.05 をデフォルト適用)
+            // LogitsからTop-Kを取得
             const topCandidates = getTopKProbabilities(outputs.logits, topK, temperature, currentIdsForPenalty, 1.05);
-            
-            // 現在の入力ID配列を取得（次に繋げるため）
-            const currentIds = currentIdsForPenalty;
             
             postMessage({
                 type: 'prediction_result',
+                generationId,
                 candidates: topCandidates,
-                currentIds: currentIds
+                currentIds: currentIdsForPenalty
             });
             
         } catch (err) {
+            pastKeyValues = null;
             postMessage({ type: 'error', error: err.message });
         }
     }

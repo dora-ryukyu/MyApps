@@ -16,6 +16,8 @@ const tempSlider = document.getElementById('temp-slider');
 const tempVal = document.getElementById('temp-val');
 const topkSlider = document.getElementById('topk-slider');
 const topkVal = document.getElementById('topk-val');
+const maxTokensSlider = document.getElementById('max-tokens-slider');
+const maxTokensVal = document.getElementById('max-tokens-val');
 
 const modeAuto = document.getElementById('mode-auto');
 const modeManual = document.getElementById('mode-manual');
@@ -23,7 +25,7 @@ const modeManual = document.getElementById('mode-manual');
 let worker = null;
 let currentInputIds = null;
 let isGenerating = false;
-let maxTokens = 256;
+let currentGenerationId = 0;
 let generatedCount = 0;
 // モデルの特殊トークン
 let modelEosTokenId = null;
@@ -63,7 +65,7 @@ function initWorker() {
                 runBtn.disabled = false;
                 break;
             case 'prediction_result':
-                handlePredictionResult(data.candidates, data.currentIds);
+                handlePredictionResult(data.candidates, data.currentIds, data.generationId);
                 break;
             case 'error':
                 console.error("Worker Error:", data.error);
@@ -71,6 +73,13 @@ function initWorker() {
                 resetGeneration();
                 break;
         }
+    });
+    
+    worker.addEventListener('error', (e) => {
+        console.error('Worker uncaught error:', e);
+        alert('Workerで予期しないエラーが発生しました。ページをリロードしてください。');
+        if (isGenerating) resetGeneration();
+        runBtn.disabled = true;
     });
     
     worker.postMessage({ type: 'init' });
@@ -83,6 +92,9 @@ tempSlider.addEventListener('input', (e) => {
 topkSlider.addEventListener('input', (e) => {
     topkVal.textContent = e.target.value;
 });
+maxTokensSlider.addEventListener('input', (e) => {
+    maxTokensVal.textContent = e.target.value;
+});
 
 // 3. 生成の制御
 runBtn.addEventListener('click', () => {
@@ -94,6 +106,14 @@ runBtn.addEventListener('click', () => {
 });
 
 function startGeneration() {
+    const prompt = promptInput.value.trim();
+    if (!prompt) {
+        alert('プロンプトを入力してください。');
+        return;
+    }
+    
+    currentGenerationId++;
+    
     isGenerating = true;
     runBtn.textContent = '停止';
     runBtn.classList.remove('btn-accent');
@@ -116,6 +136,7 @@ function resetGeneration() {
 
 function requestNextToken() {
     if (!isGenerating) return;
+    const maxTokens = parseInt(maxTokensSlider.value);
     if (generatedCount >= maxTokens) {
         resetGeneration();
         probTree.innerHTML = '<div class="tree-placeholder">最大トークン数に達しました。</div>';
@@ -127,6 +148,7 @@ function requestNextToken() {
     
     worker.postMessage({
         type: 'predict_next',
+        generationId: currentGenerationId,
         prompt: promptInput.value,
         inputIds: currentInputIds,
         temperature: temperature,
@@ -135,7 +157,8 @@ function requestNextToken() {
 }
 
 // 4. 結果の表示と選択
-function handlePredictionResult(candidates, ids) {
+function handlePredictionResult(candidates, ids, generationId) {
+    if (generationId !== currentGenerationId) return;
     if (!isGenerating) return;
     
     currentInputIds = ids;
@@ -146,12 +169,12 @@ function handlePredictionResult(candidates, ids) {
     if (isManual) {
         // 手動モード: ユーザーのクリックを待つ（UIにイベントリスナーはrender時に付与済み）
     } else {
-        // 自動モード: 確率に基づいてサンプリング（Temperature > 0の場合）
+        // 自動モード: 確率に基づいてサンプリング
         setTimeout(() => {
             if (!isGenerating) return;
             const selectedToken = sampleToken(candidates);
             selectToken(selectedToken);
-        }, 300); // 視覚効果のため少し待つ
+        }, 80); // 視覚効果のため少し待つ
     }
 }
 
@@ -205,13 +228,15 @@ function renderProbTree(candidates) {
     candidates.forEach((cand, index) => {
         const item = document.createElement('div');
         item.className = `prob-item ${modeManual.checked ? 'interactive' : ''}`;
+        // CSS animation-delay用のカスタムプロパティ
+        item.style.setProperty('--i', index);
         
         const probPct = (cand.prob * 100).toFixed(1);
         
-        // 背景のバー
+        // 背景のバー（CSSアニメーションで伸びる）
         const fill = document.createElement('div');
         fill.className = 'prob-fill';
-        fill.style.width = '0%'; // アニメーションのために0からスタート
+        fill.style.setProperty('--target-width', `${probPct}%`);
         
         const content = document.createElement('div');
         content.className = 'prob-content';
@@ -232,10 +257,8 @@ function renderProbTree(candidates) {
         // クリックイベント（手動モード用）
         item.addEventListener('click', () => {
             if (isGenerating && modeManual.checked) {
-                // UI上のフィードバック
                 item.style.borderColor = 'var(--c-accent)';
                 fill.style.background = 'var(--c-accent)';
-                
                 setTimeout(() => {
                     selectToken(cand);
                 }, 150);
@@ -243,11 +266,6 @@ function renderProbTree(candidates) {
         });
         
         probTree.appendChild(item);
-        
-        // アニメーション発火
-        setTimeout(() => {
-            fill.style.width = `${probPct}%`;
-        }, 50 * index); // 順番に伸びる効果
     });
 }
 

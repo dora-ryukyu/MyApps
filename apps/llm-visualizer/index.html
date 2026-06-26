@@ -129,6 +129,12 @@
             <input type="range" id="topk-slider" min="1" max="100" step="1" value="50">
             <div class="control-hint">候補を上位K個に絞る足切りライン</div>
           </div>
+          
+          <div class="control-row">
+            <label for="max-tokens-slider">Max Tokens: <span id="max-tokens-val">128</span></label>
+            <input type="range" id="max-tokens-slider" min="8" max="512" step="1" value="128">
+            <div class="control-hint">最大生成トークン数</div>
+          </div>
         </div>
         
         <div class="probability-tree" id="prob-tree">
