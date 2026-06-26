@@ -119,7 +119,8 @@ function startGeneration() {
     runBtn.classList.remove('btn-accent');
     promptInput.disabled = true;
     outputText.innerHTML = '';
-    probTree.innerHTML = '<div class="tree-placeholder">推論中...</div>';
+    probTree.innerHTML = '<div class="tree-placeholder">最初のトークンを推論中...</div>';
+    probTree.classList.add('is-inferencing');
     
     currentInputIds = null;
     generatedCount = 0;
@@ -161,6 +162,7 @@ function handlePredictionResult(candidates, ids, generationId) {
     if (generationId !== currentGenerationId) return;
     if (!isGenerating) return;
     
+    probTree.classList.remove('is-inferencing');
     currentInputIds = ids;
     renderProbTree(candidates);
     
@@ -218,7 +220,7 @@ function selectToken(candidate) {
     generatedCount++;
     
     // 次の予測へ
-    probTree.innerHTML = '<div class="tree-placeholder">推論中...</div>';
+    probTree.classList.add('is-inferencing');
     requestNextToken();
 }
 

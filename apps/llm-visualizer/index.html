@@ -55,12 +55,6 @@
   </div>
 
   <main class="app-container">
-    <div class="header-actions">
-      <button id="info-btn" class="btn btn-icon" title="ツールについて">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        <span>Info</span>
-      </button>
-    </div>
 
     <!-- Infoモーダル -->
     <div id="info-modal" class="modal-backdrop" style="display: none;">
@@ -104,9 +98,17 @@
 
       <!-- 右側：確率ツリーとパラメータ設定 -->
       <section class="panel visualize-panel card">
-        <h2 class="panel-title">次のトークン予測 (確率分布)</h2>
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--c-border); margin-bottom: var(--sp-4); padding-bottom: var(--sp-2);">
+          <h2 class="panel-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">次のトークン予測</h2>
+          <button id="info-btn" class="btn btn-icon" title="ツールについて" style="padding: 4px 10px; font-size: 0.85rem; height: auto;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span style="margin-left: 4px;">Info</span>
+          </button>
+        </div>
         
-        <div class="controls-group">
+        <details class="settings-details">
+          <summary>⚙️ パラメータ設定 (モード変更など)</summary>
+          <div class="controls-group" style="margin-bottom: 0; border: none; background: transparent; padding-top: var(--sp-2);">
           <div class="control-row">
             <label>Mode:</label>
             <div class="toggle-group">
@@ -135,7 +137,8 @@
             <input type="range" id="max-tokens-slider" min="8" max="512" step="1" value="128">
             <div class="control-hint">最大生成トークン数</div>
           </div>
-        </div>
+          </div>
+        </details>
         
         <div class="probability-tree" id="prob-tree">
           <div class="tree-placeholder">生成を開始すると、ここに次の単語の候補が表示されます。</div>
