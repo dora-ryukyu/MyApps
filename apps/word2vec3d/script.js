@@ -101,6 +101,49 @@ function savePresetCache(presetMap) {
   }
 }
 
+/** サーバー（静的ファイル）からプリセットベクトルを読み込む */
+async function loadServerPresetCache() {
+  const url = currentMode === 'local' ? './data/presets_local.json' : './data/presets_gemini.json';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const cache = await res.json();
+    if (cache.version !== CACHE_VERSION || cache.dim !== EMBEDDING_DIM) return null;
+    return cache.presets;
+  } catch {
+    return null;
+  }
+}
+
+/** [開発用] 現在のプリセットベクトルをJSONとしてダウンロード */
+window.exportPresets = function() {
+  const presetWords = new Set();
+  for (const list of Object.values(WORD_CATEGORIES)) {
+    for (const w of list) presetWords.add(w);
+  }
+
+  const presets = {};
+  for (const item of allItems) {
+    if (item.type === 'text' && item.vector && presetWords.has(item.text)) {
+      presets[item.text] = item.vector.map(v => Math.round(v * 1e6) / 1e6);
+    }
+  }
+
+  const data = {
+    version: CACHE_VERSION,
+    dim: EMBEDDING_DIM,
+    presets
+  };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentMode === 'local' ? 'presets_local.json' : 'presets_gemini.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  console.log(`[Export] ${Object.keys(presets).length} 語のプリセットをエクスポートしました`);
+};
+
 /* ==========================================================
    DOM
    ========================================================== */
@@ -489,8 +532,15 @@ async function encodePresetItems() {
     }
   }
 
-  // キャッシュを確認
-  const cached = loadPresetCache();
+  // キャッシュを確認 (サーバーを最優先、なければLocalStorage)
+  let cached = await loadServerPresetCache();
+  if (cached) {
+    console.log(`[Cache] サーバーから ${currentMode} モードのキャッシュを取得しました`);
+  } else {
+    cached = loadPresetCache();
+    if (cached) console.log(`[Cache] LocalStorage から ${currentMode} モードのキャッシュを取得しました`);
+  }
+
   const allCached = cached && words.every(w => cached[w] && cached[w].length === EMBEDDING_DIM);
 
   let vectors;
@@ -1163,8 +1213,9 @@ async function switchMode(newMode) {
     const textItems = allItems.filter(it => it.type === 'text');
     const mediaItems = allItems.filter(it => it.type !== 'text');
 
-    // プリセット単語のキャッシュ確認
-    const cached = loadPresetCache();
+    // プリセット単語のキャッシュ確認 (サーバー優先)
+    let cached = await loadServerPresetCache();
+    if (!cached) cached = loadPresetCache();
     const presetWords = new Set();
     for (const list of Object.values(WORD_CATEGORIES)) {
       for (const w of list) presetWords.add(w);
