@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word2Vec3D — MyApps</title>
-    <meta name="description" content="日本語の単語をAIでベクトル化し、意味の近さを3D空間で可視化するツール">
+    <meta name="description" content="テキスト・画像・ファイルをAIでベクトル化し、意味の近さを3D空間で可視化するマルチモーダルツール">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../../shared/base.css">
     <link rel="stylesheet" href="../../shared/loader.css">
@@ -16,10 +16,9 @@
 
 <body>
     <!-- ローディング画面 -->
-    <!-- ローディング画面 -->
     <div id="loading-screen" class="loading-screen">
         <div class="loading-content">
-            <!-- State 1: Consent -->
+            <!-- State 1: Consent (モード選択付き) -->
             <div id="consent-state">
                 <div class="loading-icon">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -32,13 +31,49 @@
                     </svg>
                 </div>
                 <h2 class="loading-title">Word2Vec3D</h2>
-                <p class="loading-subtitle">
-                    初回利用時はAIモデル（約127MB）のダウンロードが必要です。<br>
-                    ※通信環境の良い場所で行ってください。
-                </p>
-                <button id="consent-btn" class="btn-consent">
-                    モデルをダウンロードして開始
-                </button>
+
+                <!-- モード選択 -->
+                <div class="mode-selector" id="init-mode-selector">
+                    <button class="mode-option active" data-mode="local" id="init-mode-local">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        ローカル
+                    </button>
+                    <button class="mode-option" data-mode="gemini" id="init-mode-gemini">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        Gemini
+                    </button>
+                </div>
+
+                <!-- ローカルモード案内 -->
+                <div id="consent-local">
+                    <p class="loading-subtitle">
+                        初回利用時はAIモデル（約127MB）のダウンロードが必要です。<br>
+                        ※通信環境の良い場所で行ってください。
+                    </p>
+                    <button id="consent-btn-local" class="btn-consent">
+                        モデルをダウンロードして開始
+                    </button>
+                </div>
+
+                <!-- Geminiモード案内 -->
+                <div id="consent-gemini" style="display: none;">
+                    <p class="loading-subtitle">
+                        Gemini API を使ってテキスト・画像・PDFをベクトル化します。<br>
+                        マルチモーダル対応で異なるメディアの意味的な近さを可視化できます。
+                    </p>
+                    <div class="api-key-init">
+                        <div class="api-key-field">
+                            <input type="password" id="init-api-key" placeholder="Gemini API Key を入力…" autocomplete="off" aria-label="Gemini API Key">
+                            <button type="button" class="btn-eye" id="init-api-key-toggle" aria-label="APIキーの表示切替">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </div>
+                        <p class="api-key-hint">APIキーはブラウザのlocalStorageにのみ保存されます</p>
+                    </div>
+                    <button id="consent-btn-gemini" class="btn-consent">
+                        接続テストして開始
+                    </button>
+                </div>
             </div>
 
             <!-- State 2: Loading State -->
@@ -64,10 +99,29 @@
         <!-- 3Dキャンバス -->
         <div id="canvas-container"></div>
 
-        <!-- 単語入力パネル -->
+        <!-- 再計算オーバーレイ -->
+        <div class="recalc-overlay" id="recalc-overlay" style="display:none;">
+            <div class="recalc-content">
+                <div class="recalc-spinner"></div>
+                <p class="recalc-text" id="recalc-text">全データ再計算中…</p>
+            </div>
+        </div>
+
+        <!-- 入力パネル -->
         <div class="input-panel" id="input-panel">
-            <div class="input-panel-header">
-                <h3 class="input-panel-title">単語を追加</h3>
+            <div class="input-panel-header" id="input-panel-header">
+                <h3 class="input-panel-title">入力</h3>
+                <!-- モード切替トグル (アプリ内) -->
+                <div class="mode-toggle" id="mode-toggle">
+                    <button class="mode-toggle-btn active" data-mode="local" id="toggle-local" title="ローカル (Ruri v3) — テキストのみ">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        ローカル
+                    </button>
+                    <button class="mode-toggle-btn" data-mode="gemini" id="toggle-gemini" title="Gemini — テキスト+画像+PDF">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        Gemini
+                    </button>
+                </div>
                 <button class="btn-icon panel-toggle" id="panel-toggle" type="button" aria-label="パネルを閉じる">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -76,8 +130,20 @@
                 </button>
             </div>
             <div class="input-panel-body" id="input-panel-body">
+                <!-- Gemini APIキー設定 (Geminiモード時のみ表示) -->
+                <div class="gemini-settings" id="gemini-settings" style="display:none;">
+                    <div class="api-key-row">
+                        <input type="password" id="api-key-input" placeholder="Gemini API Key" autocomplete="off" aria-label="Gemini API Key">
+                        <button type="button" class="btn-sm" id="api-key-test" title="接続テスト">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="api-key-status" id="api-key-status"></div>
+                </div>
+
+                <!-- テキスト入力 -->
                 <form id="word-form" class="word-form">
-                    <input type="text" id="word-input" placeholder="日本語の単語を入力…" autocomplete="off" aria-label="追加する単語">
+                    <input type="text" id="word-input" placeholder="単語を入力… 例: 宇宙、幸せ、コーヒー" autocomplete="off" aria-label="追加する単語">
                     <button type="submit" class="btn btn-primary" id="add-btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -87,6 +153,22 @@
                         追加
                     </button>
                 </form>
+
+                <!-- ファイルアップロード (Geminiモード時のみ表示) -->
+                <div class="file-upload-section" id="file-upload-section" style="display:none;">
+                    <div class="file-drop-zone" id="file-drop-zone">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p>画像・PDFをドラッグ&ドロップ</p>
+                        <span class="file-drop-hint">PNG, JPEG / PDF (最大6ページ)</span>
+                        <input type="file" id="file-input" accept="image/png,image/jpeg,application/pdf" multiple hidden>
+                    </div>
+                </div>
+
+                <!-- 追加済みアイテム -->
                 <div class="added-words" id="added-words"></div>
             </div>
         </div>
@@ -105,8 +187,11 @@
             <div class="legend-body" id="legend-body"></div>
         </div>
 
-        <!-- ツールチップ -->
-        <div class="tooltip" id="tooltip"></div>
+        <!-- ツールチップ (画像プレビュー対応) -->
+        <div class="tooltip" id="tooltip">
+            <img class="tooltip-preview" id="tooltip-preview" alt="" style="display:none;">
+            <span class="tooltip-text" id="tooltip-text"></span>
+        </div>
 
         <!-- About パネル -->
         <div class="about-panel" id="about-panel" style="display:none;">
@@ -122,35 +207,39 @@
             </div>
             <div class="about-body">
                 <section class="about-section">
-                    <h4>使用モデル</h4>
-                    <p><strong>Ruri v3 130M</strong>（INT8量子化版）<br>
-                        名古屋大学が開発した日本語文埋め込みモデルです。文や単語を数値ベクトル（768次元）に変換し、意味的な類似度を計算できます。</p>
+                    <h4>2つのモード</h4>
+                    <p><strong>ローカルモード (Ruri v3 130M)</strong><br>
+                        名古屋大学が開発した日本語文埋め込みモデル。すべての処理がブラウザ内で完結し、テキストを768次元ベクトルに変換します。初回のみモデル（約127MB）のダウンロードが必要です。</p>
+                    <p style="margin-top:8px;"><strong>Geminiモード (gemini-embedding-2)</strong><br>
+                        Google の最新マルチモーダル埋め込みモデル。テキスト・画像・PDFを同一のベクトル空間にマッピングし、メディアを跨いだ意味の近さを可視化できます。APIキーが必要です。</p>
                 </section>
                 <section class="about-section">
                     <h4>仕組み</h4>
                     <ol class="about-steps">
-                        <li><strong>ベクトル化</strong> — 各単語をAIモデル（Transformer）に通し、768次元のベクトルに変換</li>
-                        <li><strong>次元削減（PCA）</strong> — 主成分分析で768次元→3次元に圧縮。最も分散の大きい3方向を軸として選択</li>
-                        <li><strong>3D可視化</strong> — Three.js で3D空間にプロット。意味が近い単語は空間内で近くに配置される</li>
+                        <li><strong>ベクトル化</strong> — 各入力をAIモデルに通し、768次元のベクトルに変換</li>
+                        <li><strong>次元削減（PCA）</strong> — 主成分分析で768次元→3次元に圧縮</li>
+                        <li><strong>3D可視化</strong> — Three.js で3D空間にプロット。意味が近いアイテムは空間内で近くに配置される</li>
                     </ol>
                 </section>
                 <section class="about-section">
                     <h4>読み方</h4>
-                    <p>空間内で<strong>近い単語は意味が似ている</strong>ことを表します。同じカテゴリの単語がクラスタを形成する傾向があります。</p>
+                    <p>空間内で<strong>近いアイテムは意味が似ている</strong>ことを表します。「かわいい」というテキストと可愛い画像が近くに並ぶなど、モダリティを超えた関連性が見えます。</p>
                 </section>
                 <section class="about-section about-tech">
                     <h4>技術スタック</h4>
-                    <p>推論: <a href="https://huggingface.co/docs/transformers.js" target="_blank"
+                    <p>ローカル推論: <a href="https://huggingface.co/docs/transformers.js" target="_blank"
                             rel="noopener">Transformers.js</a>（ONNX Runtime Web）<br>
+                        クラウド推論: <a href="https://ai.google.dev/gemini-api/docs/embeddings" target="_blank" rel="noopener">Gemini Embedding API</a><br>
                         描画: <a href="https://threejs.org/" target="_blank" rel="noopener">Three.js</a><br>
-                        すべての処理はブラウザ上で完結しています。</p>
+                        ローカルモードはすべての処理がブラウザ上で完結しています。</p>
                 </section>
             </div>
         </div>
 
         <!-- 情報パネル -->
         <div class="info-badge" id="info-badge">
-            <span class="info-hint">ドラッグで回転 / スクロールでズーム</span>
+            <span class="info-hint" id="info-hint">ドラッグで回転 / スクロールでズーム</span>
+            <span class="mode-badge" id="mode-badge">ローカル</span>
             <button class="btn-about" id="about-btn" type="button" aria-label="このアプリについて">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
