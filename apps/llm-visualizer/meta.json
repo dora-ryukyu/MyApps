@@ -1,0 +1,8 @@
+{
+  "id": "llm-visualizer",
+  "name": "LLM Token Visualizer",
+  "description": "AIの脳内（確率分布とトークン選択過程）を可視化するツール",
+  "icon": "brain",
+  "color": "#a855f7",
+  "tags": ["AI", "Visualization", "LLM", "WebGPU"]
+}

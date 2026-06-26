@@ -1,0 +1,358 @@
+/* llm-visualizer style.css */
+
+html {
+  overflow-y: scroll; /* スクロールバーのガタつき防止 */
+}
+
+:root {
+  /* オーバーライド：このアプリのテーマカラー */
+  --c-accent: #a855f7;
+  --c-accent-soft: rgba(168, 85, 247, 0.2);
+}
+
+.app-container {
+  max-width: var(--w-page, 1280px);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 1024px) {
+  .layout-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.panel-title {
+  margin-top: 0;
+  margin-bottom: var(--sp-4);
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: var(--sp-2);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.input-group label {
+  font-size: var(--text-sm, 13px);
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+.modern-textarea {
+  resize: vertical;
+  min-height: 80px;
+  background: var(--c-surface-solid);
+  border: 2px solid var(--c-border);
+  border-radius: var(--r-md, 8px);
+  padding: var(--sp-3);
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--c-text);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.modern-textarea:focus {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft), inset 0 2px 4px rgba(0,0,0,0.05);
+  outline: none;
+}
+
+.btn {
+  padding: var(--sp-3) var(--sp-5);
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: var(--r);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary, .btn-accent {
+  background: var(--c-accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled), .btn-accent:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* トークン表示エリア */
+.output-box {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-4);
+  min-height: 150px;
+  font-size: 1.1rem;
+  line-height: var(--leading);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px;
+}
+
+/* トークンスパンのスタイル */
+.token-span {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background-color: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  transition: background-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+
+.token-span:hover {
+  background-color: var(--c-accent-soft);
+  transform: translateY(-1px);
+}
+
+.token-span.token-new {
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+
+/* コントロールエリア */
+.controls-group {
+  background: var(--c-bg);
+  border-radius: var(--r);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.control-row label {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.control-hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--c-accent);
+}
+
+.toggle-group {
+  display: flex;
+  gap: var(--sp-2);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: 2px;
+}
+
+.toggle-group input[type="radio"] {
+  display: none;
+}
+
+.toggle-group label {
+  flex: 1;
+  text-align: center;
+  padding: var(--sp-2);
+  border-radius: calc(var(--r) - 2px);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.toggle-group input[type="radio"]:checked + label {
+  background: var(--c-accent);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+/* 確率ツリー表示部 */
+.probability-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 280px;
+}
+
+.tree-placeholder {
+  color: var(--c-text-3);
+  text-align: center;
+  padding: var(--sp-6) 0;
+  font-style: italic;
+}
+
+.prob-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.prob-item.interactive {
+  cursor: pointer;
+}
+
+.prob-item.interactive:hover {
+  border-color: var(--c-accent);
+  transform: translateX(4px);
+}
+
+.prob-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--c-accent-soft);
+  z-index: 0;
+  transition: width 0.3s ease-out;
+}
+
+.prob-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  align-items: center;
+}
+
+.prob-token {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.prob-value {
+  font-family: monospace;
+  color: var(--c-text-2);
+  background: var(--c-surface-solid);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Spinner for button */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* モーダル & Header Actions */
+.header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--sp-4);
+}
+
+.btn-icon {
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 0.9rem;
+}
+
+.btn-icon:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--sp-6);
+  background: var(--c-surface-solid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-content h2, .modal-content h3 {
+  margin-top: 0;
+  color: var(--c-accent);
+}
+
+.modal-content h3 {
+  margin-top: var(--sp-5);
+  font-size: 1.1rem;
+}
+
+.modal-content ul {
+  padding-left: var(--sp-5);
+}
+
+.modal-content li {
+  margin-bottom: var(--sp-2);
+  line-height: var(--leading);
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--c-accent);
+}
