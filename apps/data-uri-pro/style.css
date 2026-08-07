@@ -74,6 +74,18 @@
     filter: grayscale(100%);
 }
 
+/* 未選択時はチェッカーパターンを消して単色にする */
+.result-area.is-empty .img-wrap {
+    background: var(--c-surface-alt);
+    background-image: none;
+}
+
+.result-area.is-empty .img-wrap::after {
+    content: '画像がありません';
+    color: var(--c-text-3);
+    font-size: var(--text-sm);
+}
+
 .preview-card {
     padding: var(--sp-6);
     display: flex;

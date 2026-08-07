@@ -2,6 +2,19 @@
     'use strict';
 
     const display = document.getElementById('password-display');
+
+    // パスワードを span に書き込み、white-space: nowrap を確実に効かせる
+    // 初期テキストノードを除去し、span だけを残す
+    display.textContent = '';
+    let displaySpan = display.querySelector('span');
+    if (!displaySpan) {
+        displaySpan = document.createElement('span');
+        display.appendChild(displaySpan);
+    }
+    const setPassword = (text) => {
+        displaySpan.textContent = text;
+    };
+
     const btnCopy = document.getElementById('btn-copy');
     const btnRegen = document.getElementById('btn-regen');
     const lengthRange = document.getElementById('length-range');
@@ -80,13 +93,30 @@
         }
     }
 
+    function fitPasswordFont(password) {
+        const length = password.length;
+        const base = Math.max(14, Math.min(32, Math.floor(320 / length) * 2 + 14));
+        display.style.fontSize = `${base}px`;
+
+        // 実際の表示幅に収まるまでフォントサイズを縮小
+        const maxWidth = display.clientWidth;
+        const span = displaySpan;
+        let size = base;
+        while (size > 12 && span.scrollWidth > maxWidth) {
+            size -= 1;
+            display.style.fontSize = `${size}px`;
+            void span.offsetWidth; // レイアウトを強制更新
+        }
+    }
+
     function generate() {
         const pools = selectedPools();
         const poolCount = pools.length;
         const length = syncLengthInputs(poolCount);
 
         if (poolCount === 0) {
-            display.textContent = '文字種を1つ以上選択してください';
+            setPassword('文字種を1つ以上選択してください');
+            display.style.fontSize = '';
             updateStrength(0);
             btnCopy.disabled = true;
             return;
@@ -104,7 +134,8 @@
         }
 
         const finalPassword = shuffle(password).join('');
-        display.textContent = finalPassword;
+        setPassword(finalPassword);
+        fitPasswordFont(finalPassword);
         btnCopy.disabled = false;
 
         const entropy = length * Math.log2(combined.length);
@@ -128,7 +159,7 @@
     btnRegen.addEventListener('click', generate);
 
     btnCopy.addEventListener('click', async () => {
-        const value = display.textContent;
+        const value = displaySpan.textContent;
         if (!value || value.includes('選択してください')) {
             return;
         }
