@@ -33,11 +33,34 @@
                 <textarea id="markdown-input" placeholder="# ここに入力..." spellcheck="false"></textarea>
             </div>
             <div class="pane preview-pane">
-                <div class="pane-label">プレビュー</div>
+                <div class="pane-label">
+                    <span>プレビュー</span>
+                    <button id="btn-fullscreen" class="pane-btn" title="プレビューを全画面表示" aria-label="プレビューを全画面表示">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                            <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                            <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                            <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                        </svg>
+                    </button>
+                </div>
                 <div id="markdown-output" class="markdown-body"></div>
             </div>
         </div>
     </main>
+
+    <div id="preview-modal" class="preview-modal" hidden>
+        <div class="preview-modal-header">
+            <span class="preview-modal-title">プレビュー</span>
+            <button id="btn-modal-close" class="pane-btn" title="閉じる" aria-label="プレビューを閉じる">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"/>
+                    <path d="m6 6 12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="preview-modal-body" class="markdown-body"></div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="../../shared/header.js" data-app-name="Markdownエディタ" data-app-icon="file-text" data-app-color="#0ea5e9"></script>
     <script src="script.js"></script>

@@ -6,6 +6,10 @@ const lineCount = document.getElementById('line-count');
 const readTime = document.getElementById('read-time');
 const btnCopy = document.getElementById('btn-copy');
 const btnClear = document.getElementById('btn-clear');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const btnModalClose = document.getElementById('btn-modal-close');
+const previewModal = document.getElementById('preview-modal');
+const previewModalBody = document.getElementById('preview-modal-body');
 
 const allowedTags = new Set([
     'A', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
@@ -94,6 +98,7 @@ function persistDraft(rawValue) {
 function update() {
     const rawValue = input.value;
     renderPreview(rawValue);
+    if (previewModalBody) previewModalBody.innerHTML = output.innerHTML;
 
     const chars = rawValue.length;
     const words = rawValue.trim() ? rawValue.trim().split(/\s+/).length : 0;
@@ -127,6 +132,33 @@ btnClear.addEventListener('click', () => {
     }
     input.value = '';
     update();
+});
+
+function openPreviewModal() {
+    if (!previewModal) return;
+    previewModal.hidden = false;
+    document.body.classList.add('modal-open');
+    btnModalClose?.focus();
+}
+
+function closePreviewModal() {
+    if (!previewModal) return;
+    previewModal.hidden = true;
+    document.body.classList.remove('modal-open');
+    btnFullscreen?.focus();
+}
+
+btnFullscreen?.addEventListener('click', openPreviewModal);
+btnModalClose?.addEventListener('click', closePreviewModal);
+
+previewModal?.addEventListener('click', (event) => {
+    if (event.target === previewModal) closePreviewModal();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && previewModal && !previewModal.hidden) {
+        closePreviewModal();
+    }
 });
 
 const savedDraft = localStorage.getItem('myapps-markdown-draft');

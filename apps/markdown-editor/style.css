@@ -91,6 +91,81 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--c-text-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+}
+
+/* --- プレビュー全画面モーダル --- */
+.preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--c-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-modal[hidden] {
+    display: none;
+}
+
+.preview-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--c-surface-solid);
+    border-bottom: 1px solid var(--c-border);
+    flex-shrink: 0;
+}
+
+.preview-modal-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--c-text-2);
+}
+
+.preview-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-8) var(--sp-5);
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .preview-modal-body {
+        max-width: 760px;
+    }
+}
+
+/* --- パネル内ボタン --- */
+.pane-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-card);
+    color: var(--c-text-3);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-default), background var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
+}
+
+.pane-btn:hover {
+    color: var(--c-text);
+    background: var(--c-surface-hover);
+    border-color: var(--c-accent);
+}
+
+.pane-btn:focus-visible {
+    outline: 2px solid var(--c-focus-ring);
+    outline-offset: 2px;
 }
 
 textarea {
