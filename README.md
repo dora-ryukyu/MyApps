@@ -44,7 +44,12 @@ npm run registry
 # ローカルサーバー起動
 npm run dev
 # -> http://localhost:8080 を開く
+
+# ユニットテスト（text-to-image の純粋ロジック）
+npm test
 ```
+
+> **Note**: アプリのテストは `apps/<app>/test/*.test.mjs` に置き、Node.js の組み込みテストランナーで実行します（追加依存なし）。
 
 > **Note**: `registry.json` は `.gitignore` に含まれています。ローカルで生成してもコミットされません。本番環境では GitHub Actions がデプロイ時に最新の `apps/` 構造に基づいて自動生成します。
 

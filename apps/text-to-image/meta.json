@@ -1,0 +1,8 @@
+{
+  "id": "text-to-image",
+  "name": "テキスト→画像生成",
+  "description": "プロンプトから 512×512 の画像をブラウザ内だけで生成。WebGPU でサーバーに送信しません。",
+  "icon": "wand-sparkles",
+  "color": "#f43f5e",
+  "tags": ["AI", "画像生成", "WebGPU"]
+}

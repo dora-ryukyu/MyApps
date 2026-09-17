@@ -1,0 +1,389 @@
+/* ==========================================================
+   text-to-image — アプリ固有スタイル
+   shared/base.css のトークンのみを使う
+   ========================================================== */
+
+:root {
+  /* このアプリのテーマカラー (DESIGN.md のオーバーライド手段) */
+  --c-accent: #f43f5e;
+  --c-accent-hover: #e11d48;
+  --c-accent-soft: rgba(244, 63, 94, 0.12);
+  --c-accent-glow: rgba(244, 63, 94, 0.45);
+}
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.app-header {
+  flex-shrink: 0;
+}
+
+.app-container {
+  flex: 1;
+  width: 100%;
+  max-width: var(--w-page, 1280px);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4) var(--sp-12);
+}
+
+/* ==========================================================
+   見出し
+   ========================================================== */
+.app-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.app-title {
+  margin: 0;
+  font-size: var(--text-2xl, 32px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight, 1.3);
+}
+
+.app-subtitle {
+  margin: var(--sp-1) 0 0;
+  color: var(--c-text-2);
+  font-size: var(--text-sm, 13px);
+}
+
+/* ==========================================================
+   レイアウト
+   ========================================================== */
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-6);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .layout-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.card {
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg, 12px);
+  box-shadow: var(--shadow);
+  padding: var(--sp-5);
+}
+
+.panel {
+  min-width: 0;
+}
+
+.panel-title {
+  margin: 0 0 var(--sp-4);
+  padding-bottom: var(--sp-2);
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--c-border);
+}
+
+/* ==========================================================
+   入力
+   ========================================================== */
+.field-label {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--text-sm, 13px);
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+.prompt-input,
+.seed-input {
+  width: 100%;
+  font-family: var(--font);
+  font-size: var(--text-base, 15px);
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r, 8px);
+  padding: var(--sp-3) var(--sp-4);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.prompt-input {
+  resize: vertical;
+  min-height: 140px;
+  line-height: var(--leading, 1.6);
+}
+
+.prompt-input:focus-visible,
+.seed-input:focus-visible {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+.seed-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.seed-field {
+  flex: 1;
+}
+
+.seed-input {
+  font-family: var(--font-mono);
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.field-hint {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-xs, 11px);
+  color: var(--c-text-3);
+}
+
+/* ==========================================================
+   ボタン
+   ========================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-5);
+  font-family: var(--font);
+  font-size: var(--text-base, 15px);
+  font-weight: 600;
+  border-radius: var(--r, 8px);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--duration), color var(--duration),
+    border-color var(--duration), transform var(--duration-fast), box-shadow var(--duration);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--c-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--c-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-ghost {
+  color: var(--c-text-2);
+  background: transparent;
+  border-color: var(--c-border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--c-text);
+  background: var(--c-surface-alt);
+}
+
+.btn-danger {
+  color: #fff;
+  background: var(--c-error, #ef4444);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+/* ==========================================================
+   出力
+   ========================================================== */
+.output-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: var(--r, 8px);
+  border: 1px solid var(--c-border);
+  background:
+    repeating-conic-gradient(var(--c-surface-alt) 0% 25%, var(--c-surface-solid) 0% 50%) 50% / 24px 24px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#output-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.canvas-placeholder {
+  margin: 0;
+  padding: var(--sp-4);
+  text-align: center;
+  color: var(--c-text-3);
+  font-size: var(--text-sm, 13px);
+}
+
+/* ==========================================================
+   メタ情報 / ステータス
+   ========================================================== */
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-full, 9999px);
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  color: var(--c-text-2);
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border);
+}
+
+.badge-warning {
+  color: var(--c-warning, #f59e0b);
+  border-color: var(--c-warning, #f59e0b);
+}
+
+.status-text {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--text-sm, 13px);
+  color: var(--c-text-3);
+}
+
+.error-box {
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r, 8px);
+  border: 1px solid var(--c-error, #ef4444);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--c-error, #ef4444);
+  font-size: var(--text-sm, 13px);
+  white-space: pre-wrap;
+}
+
+/* ==========================================================
+   モーダル (Info)
+   ========================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: rgba(15, 17, 21, 0.5);
+  backdrop-filter: var(--glass, blur(12px));
+}
+
+.modal-content {
+  position: relative;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: var(--sp-3);
+}
+
+.modal-content h3 {
+  margin: var(--sp-4) 0 var(--sp-1);
+  font-size: var(--text-base, 15px);
+}
+
+.modal-content p,
+.modal-content li {
+  color: var(--c-text-2);
+  font-size: var(--text-sm, 13px);
+}
+
+.modal-content ol {
+  padding-left: 1.2em;
+  margin: var(--sp-2) 0;
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--r-sm, 4px);
+  background: transparent;
+  color: var(--c-text-2);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: var(--c-surface-alt);
+  color: var(--c-text);
+}
+
+.modal-content .btn-danger {
+  margin-top: var(--sp-4);
+}
+
+/* ==========================================================
+   ローディングのスピナー
+   ========================================================== */
+.spin {
+  animation: tti-spin 1s linear infinite;
+}
+
+@keyframes tti-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
