@@ -54,6 +54,7 @@
     'orbit':         '<circle cx="12" cy="12" r="3"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="12" cy="5" r="2"/><line x1="14.83" y1="10.17" x2="17.17" y2="12"/><line x1="6.83" y1="12" x2="9.17" y2="13.83"/><line x1="12" y1="14.83" x2="12" y2="17"/><line x1="12" y1="7" x2="12" y2="9.17"/>',
     'languages':     '<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>',
     'audio-lines':   '<path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/>',
+    'mic':           '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/>',
   };
 
   const FALLBACK = 'zap';
