@@ -24,10 +24,16 @@ export const MODEL_REVISION = 'main';
 export const MODEL_BASE_URL = `https://huggingface.co/${MODEL_ID}/resolve/${MODEL_REVISION}`;
 export const MANIFEST_URL = `${MODEL_BASE_URL}/manifest.json`;
 
-/** tokenizer ファイルは repo 内の tokenizer/ サブフォルダに置かれている */
-export const TOKENIZER_SUBFOLDER = 'tokenizer';
-/** tokenizer が単体で取得できない場合のフォールバック (同一 CLIP tokenizer) */
-export const TOKENIZER_FALLBACK_ID = 'Xenova/clip-vit-base-patch32';
+/**
+ * CLIP tokenizer。
+ * NanoDiffuser 同梱の tokenizer は `tokenizer/` サブフォルダにあり、
+ * Transformers.js 4.2.0 の `subfolder` では読み込めないことを実機確認済み
+ * (2026-09-17, `Cannot read properties of undefined (reading 'tokenizer_class')`)。
+ * CLIP のトークナイザは共用なので、動作確認済みの標準 CLIP トークナイザを使う。
+ */
+export const TOKENIZER_ID = 'Xenova/clip-vit-base-patch32';
+/** モデル同梱 tokenizer のサブフォルダ (上の読み込みに失敗した場合の保険) */
+export const MODEL_TOKENIZER_SUBFOLDER = 'tokenizer';
 
 export const ORT_VERSION = '1.29.0';
 export const TRANSFORMERS_VERSION = '4.2.0';

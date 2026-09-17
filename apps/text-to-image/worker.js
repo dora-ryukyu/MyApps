@@ -13,8 +13,8 @@
 import {
   MODEL_ID,
   MANIFEST_URL,
-  TOKENIZER_SUBFOLDER,
-  TOKENIZER_FALLBACK_ID,
+  TOKENIZER_ID,
+  MODEL_TOKENIZER_SUBFOLDER,
   ORT_MODULE_URL,
   ORT_CDN_BASE,
   TRANSFORMERS_MODULE_URL,
@@ -124,13 +124,14 @@ async function loadTokenizer() {
     }
   };
   try {
+    return await tf.AutoTokenizer.from_pretrained(TOKENIZER_ID, { progress_callback });
+  } catch (err) {
+    // 標準 CLIP トークナイザが取得できない場合はモデル同梱のものを試す
+    console.warn('標準 CLIP tokenizer の取得に失敗。モデル同梱 tokenizer を試します:', err);
     return await tf.AutoTokenizer.from_pretrained(MODEL_ID, {
-      subfolder: TOKENIZER_SUBFOLDER,
+      subfolder: MODEL_TOKENIZER_SUBFOLDER,
       progress_callback,
     });
-  } catch (err) {
-    console.warn('同梱 tokenizer の取得に失敗。互換 CLIP tokenizer を使います:', err);
-    return await tf.AutoTokenizer.from_pretrained(TOKENIZER_FALLBACK_ID, { progress_callback });
   }
 }
 
