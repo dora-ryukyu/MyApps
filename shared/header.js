@@ -42,6 +42,7 @@
     'file-down':   '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
     'binary':      '<rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/>',
     'scissors':    '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+    'eraser':      '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
     'align-left':  '<line x1="21" x2="3" y1="6" y2="6"/><line x1="15" x2="3" y1="12" y2="12"/><line x1="17" x2="3" y1="18" y2="18"/>',
     'file-type-2': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h3"/>',
     'fingerprint': '<path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.02-.3 3"/><path d="M14 22a10 10 0 0 0 8-10V9a4 4 0 0 0-8 0v3c0 1.02-.1 2.02-.3 3"/><path d="M18 22a2 2 0 0 0 2-2V9a6 6 0 0 0-12 0v3c0 1.02-.1 2.02-.3 3"/><path d="M22 12c0-6.627-5.373-12-12-12S2 5.373 2 12v3c0 1.02-.1 2.02-.3 3"/><path d="M2 12a10 10 0 0 1 5-8.66"/><path d="M7 22a2 2 0 0 0 2-2V7a8 8 0 0 0-5 5"/>',

@@ -1,6 +1,7 @@
 {
   "scripts": {
     "dev": "npx -y http-server . -p 8080 -c-1 --cors",
-    "registry": "node scripts/generate-registry.js"
+    "registry": "node scripts/generate-registry.js",
+    "test": "node --test apps/*/test/*.test.mjs"
   }
 }

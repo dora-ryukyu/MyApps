@@ -1,0 +1,8 @@
+{
+  "id": "bg-remove",
+  "name": "背景除去",
+  "description": "画像の背景を消して透過 PNG に。MODNet / RMBG-1.4 を WebGPU・WASM でブラウザ内実行し、画像は送信しません。",
+  "icon": "eraser",
+  "color": "#db2777",
+  "tags": ["AI", "画像", "背景除去", "マッティング", "WebGPU"]
+}
