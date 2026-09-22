@@ -125,8 +125,8 @@ function requestModelLoad() {
   if (!worker) return;
   modelReady = false;
   updateProcessEnabled();
-  if (!appReady) return;
-  setStatus('モデルを切り替え中…');
+  // 初回 (appReady=false) はローディング画面側が状態を出すので、ここでは status を触らない
+  if (appReady) setStatus('モデルを切り替え中…');
   worker.postMessage({ type: 'load', modeKey: $modeSelect.value });
 }
 
