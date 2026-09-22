@@ -33,9 +33,10 @@
                 </div>
                 <h2 class="loading-title">ローカル翻訳</h2>
                 <p class="loading-subtitle">
-                    初回利用時はAI翻訳モデル（約485MB）のダウンロードが必要です。<br>
+                    初回利用時はAI翻訳モデル（約 <span id="model-size">-</span>）のダウンロードが必要です。<br>
                     ダウンロード後はブラウザにキャッシュされ、<strong>すべての処理がローカルで完結</strong>します。
                 </p>
+                <p class="loading-subtitle" id="model-license">使用モデル: - / ライセンス: -</p>
                 <button id="consent-btn" class="btn-consent">
                     モデルをダウンロードして開始
                 </button>
@@ -72,18 +73,17 @@
                     </svg>
                     <span>データは一切送信されません</span>
                 </div>
-                <div class="powered-badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path
-                            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-                    </svg>
-                    <span>Powered by local AI</span>
-                </div>
+                <span class="backend-badge" id="backend-badge">バックエンド: 準備中</span>
             </div>
 
-            <!-- リアルタイムモード切替 -->
+            <div id="error-box" class="error-box" role="alert" style="display:none;"></div>
+
+            <!-- モデル選択 + リアルタイムモード切替 -->
             <div class="mode-bar">
+                <label class="mode-select-label" for="mode-select">
+                    <span class="mode-select-text">モデル</span>
+                    <select id="mode-select" class="mode-select"></select>
+                </label>
                 <label class="toggle-label" for="realtime-toggle">
                     <span class="toggle-text">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -201,14 +201,17 @@
             </div>
             <div class="about-body">
                 <section class="about-section">
-                    <h4>Architecture</h4>
-                    <p><strong>LFM2-350M-ENJP-MT</strong> (INT4 Quantized)<br>
-                        Liquid AI
-                        が開発した次世代の言語モデル。従来のTransformerと異なり、<strong>AttentionとConvolution（畳み込み）を組み合わせたハイブリッドアーキテクチャ</strong>を採用しています。これにより、軽量ながら350Mパラメータで高品質な翻訳を実現しています。
+                    <h4>Models</h4>
+                    <p>
+                        <strong>高速（350M）</strong> — LFM2-350M-ENJP-MT。日英翻訳に特化した軽量モデル。<br>
+                        <strong>高品質（1.2B）</strong> — LFM2.5-1.2B-JP。日本語と英語に対応した汎用モデルで、
+                        文脈を踏まえた訳になる代わりに、ダウンロードと推論が重くなります。
+                        どちらも Liquid AI の LFM2 系で、Attention と Convolution を組み合わせた
+                        ハイブリッドアーキテクチャです。
                     </p>
                 </section>
                 <section class="about-section">
-                    <h4>Privacy & Security</h4>
+                    <h4>Privacy &amp; Security</h4>
                     <ul class="about-list">
                         <li><strong>完全ローカル実行</strong> — 入力データが外部サーバーに送信されることはありません。</li>
                         <li><strong>オフライン対応</strong> — 一度モデルをダウンロードすれば、ネット環境がなくても動作します。</li>
@@ -216,15 +219,21 @@
                 </section>
                 <section class="about-section">
                     <h4>Real-time Mode</h4>
-                    <p>WebGPUのパワーを活用し、<strong>文字入力と同時に推論を行う</strong>リアルタイム翻訳を実現。タイプライターのようなレスポンスを楽しめます。</p>
+                    <p>WebGPU のパワーを活用し、<strong>文字入力と同時に推論を行う</strong>リアルタイム翻訳を実現します。</p>
                 </section>
                 <section class="about-section about-tech">
                     <h4>Tech Stack</h4>
                     <p>Inference: <a href="https://huggingface.co/docs/transformers.js" target="_blank"
-                            rel="noopener">Transformers.js v3.8</a> (ONNX Runtime Web)<br>
-                        Model: <a href="https://huggingface.co/onnx-community/LFM2-350M-ENJP-MT-ONNX" target="_blank"
-                            rel="noopener">LFM2-350M-ENJP-MT-ONNX</a><br>
-                        Backend: WebGPU (Fallback to WASM/CPU)</p>
+                            rel="noopener">Transformers.js v4</a> (ONNX Runtime Web)<br>
+                        Models: <a href="https://huggingface.co/onnx-community/LFM2-350M-ENJP-MT-ONNX" target="_blank"
+                            rel="noopener">LFM2-350M-ENJP-MT-ONNX</a> /
+                        <a href="https://huggingface.co/LiquidAI/LFM2.5-1.2B-JP-202606-ONNX" target="_blank"
+                            rel="noopener">LFM2.5-1.2B-JP-202606-ONNX</a><br>
+                        Backend: WebGPU (Fallback to WASM/CPU)
+                    </p>
+                </section>
+                <section class="about-section">
+                    <button id="clear-cache-btn" class="btn btn-danger" type="button">モデルキャッシュを削除</button>
                 </section>
             </div>
         </div>
@@ -242,14 +251,6 @@
             </button>
         </div>
     </main>
-
-    <script type="importmap">
-    {
-        "imports": {
-            "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"
-        }
-    }
-    </script>
 
     <script src="../../shared/header.js" data-app-name="ローカル翻訳" data-app-icon="languages"
         data-app-color="#0ea5e9"></script>

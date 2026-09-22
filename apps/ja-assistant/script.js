@@ -1,20 +1,23 @@
 /**
- * script.js — ローカル翻訳のメインスレッド制御
+ * script.js — 日本語アシスタントのメインスレッド制御
  *
  * UI を担当し、モデルのダウンロードと推論は worker.js に投げる。
- * 「高速（350M）」と「高品質（1.2B）」を切り替えられる。
+ * 要約 / Q&A / 構造化抽出の 3 タスクを切り替えて使う。
  */
 
 import {
-  listModels,
+  TASKS,
+  DEFAULT_TASK,
+  getTask,
+  buildMessages,
+  formatResult,
   chooseModel,
   estimateModelBytes,
   formatBytes,
   formatSpeed,
-  cleanTranslation,
-  DEFAULT_MODE,
+  normalizeFields,
+  DEFAULT_FIELDS,
   MAX_INPUT_CHARS,
-  DEBOUNCE_MS,
 } from './pipeline.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -33,29 +36,29 @@ const $modelLicense = $('model-license');
 /* App */
 const $appMain = $('app-main');
 const $errorBox = $('error-box');
-const $sourceText = $('source-text');
-const $outputText = $('output-text');
-const $translateBtn = $('translate-btn');
-const $swapBtn = $('swap-btn');
+const $taskTabs = $('task-tabs');
+const $taskNote = $('task-note');
+const $inputText = $('input-text');
+const $charCount = $('char-count');
+const $questionField = $('question-field');
+const $questionInput = $('question-input');
+const $fieldsField = $('fields-field');
+const $fieldsInput = $('fields-input');
+const $runBtn = $('run-btn');
 const $clearBtn = $('clear-btn');
 const $copyBtn = $('copy-btn');
-const $charCount = $('char-count');
-const $realtimeToggle = $('realtime-toggle');
-const $modeHint = $('mode-hint');
-const $modeSelect = $('mode-select');
+const $outputText = $('output-text');
 const $metricsBar = $('metrics-bar');
 const $speedValue = $('speed-value');
 const $tokensValue = $('tokens-value');
-const $sourceLang = $('source-lang-label');
-const $targetLang = $('target-lang-label');
-const $outputLang = $('output-lang-label');
 const $backendBadge = $('backend-badge');
-const $aboutPanel = $('about-panel');
+const $modelBadge = $('model-badge');
 const $aboutBtn = $('about-btn');
-const $aboutClose = $('about-close');
+const $infoModal = $('info-modal');
+const $closeInfoBtn = $('close-info-btn');
 const $clearCacheBtn = $('clear-cache-btn');
 
-const OUTPUT_PLACEHOLDER = '翻訳結果がここに表示されます';
+const OUTPUT_PLACEHOLDER = '結果がここに表示されます';
 
 /* ==========================================================
    状態
@@ -64,23 +67,18 @@ let worker = null;
 let appReady = false;
 let modelReady = false;
 let generating = false;
-let direction = 'en-to-jp';
-let debounceTimer = null;
+let taskKey = DEFAULT_TASK;
 let requestSeq = 0;
 let activeRequest = 0;
 let resultText = '';
-let queued = null; // 生成中に来た最新リクエスト (リアルタイム入力用)
+let lastResult = '';
 let hasWebGPU = typeof navigator !== 'undefined' && Boolean(navigator.gpu);
 
 /* ==========================================================
    起動
    ========================================================== */
-function createWorker() {
-  return new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-}
-
 function setupWorker() {
-  worker = createWorker();
+  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
 
   worker.addEventListener('error', (event) => {
     console.error('worker error:', event);
@@ -113,7 +111,7 @@ function setupWorker() {
         handleWorkerError(message);
         break;
       case 'cache-cleared':
-        handleCacheCleared(message);
+        setStatus(`モデルキャッシュを削除しました (${message.removed} 件)`);
         break;
       default:
         break;
@@ -124,9 +122,8 @@ function setupWorker() {
 function requestModelLoad() {
   if (!worker) return;
   modelReady = false;
-  updateTranslateEnabled();
-  if (appReady) setStatus('モデルを切り替え中…');
-  worker.postMessage({ type: 'load', modeKey: $modeSelect.value });
+  updateRunEnabled();
+  worker.postMessage({ type: 'load' });
 }
 
 /* ==========================================================
@@ -135,8 +132,6 @@ function requestModelLoad() {
 function handleStatus(message) {
   if (!appReady && message.stage !== 'process') {
     $loadingStatus.textContent = message.message || '準備中…';
-  } else if (message.stage !== 'process') {
-    setStatus(message.message || '');
   }
 }
 
@@ -159,16 +154,8 @@ function handleReady(message) {
     $loadingHint.textContent = '準備完了';
     $progressFill.style.width = '100%';
     showApp();
-  } else {
-    setStatus('モデルを切り替えました');
   }
-  updateTranslateEnabled();
-
-  if (queued) {
-    const next = queued;
-    queued = null;
-    runTranslation(next);
-  }
+  updateRunEnabled();
 }
 
 function showApp() {
@@ -189,31 +176,23 @@ function resetConsent(buttonLabel) {
 }
 
 function handleWorkerError(message) {
+  if (message.stage === 'process' && message.requestId !== activeRequest) return;
   const prefix =
     message.stage === 'process'
-      ? '翻訳エラー'
+      ? '生成エラー'
       : message.stage === 'cache'
         ? 'キャッシュ操作エラー'
         : '初期化エラー';
-  if (message.stage === 'process' && message.requestId !== activeRequest) {
-    // 古いリクエストのエラーは無視する
-    return;
-  }
   showError(`${prefix}: ${message.error}`);
 
   if (message.stage === 'init') {
     if (!appReady) resetConsent('再試行する');
-    else setStatus('モデルの読み込みに失敗しました');
   } else if (message.stage === 'process') {
     generating = false;
-    updateStreamingCursor();
-    updateTranslateEnabled();
-    setStatus('翻訳に失敗しました');
+    removeCursor();
+    updateRunEnabled();
+    setStatus('生成に失敗しました');
   }
-}
-
-function handleCacheCleared(message) {
-  setStatus(`モデルキャッシュを削除しました (${message.removed} 件)`);
 }
 
 function showError(text) {
@@ -227,37 +206,36 @@ function clearError() {
 }
 
 function setStatus(text) {
-  $modeHint.textContent = text || '';
+  $taskNote.textContent = text || '';
 }
 
 /* ==========================================================
-   翻訳
+   生成
    ========================================================== */
-function translate() {
-  if (!modelReady) return;
-  const text = $sourceText.value.trim();
-  if (!text) return;
-  if (text.length > MAX_INPUT_CHARS) {
-    showError(`入力が長すぎます (最大 ${MAX_INPUT_CHARS} 文字)。分割してください。`);
-    return;
-  }
+function runTask() {
+  if (!modelReady || generating) return;
   clearError();
 
-  const request = { text, direction };
-  if (generating) {
-    // 生成中なら最新のリクエストだけを覚えて、完了後に流す
-    queued = request;
+  const input = $inputText.value.trim();
+  const payload = {
+    taskKey,
+    input,
+    question: $questionInput.value.trim(),
+    fields: normalizeFields($fieldsInput.value),
+  };
+
+  try {
+    buildMessages(taskKey, payload); // 事前検証 (例外ならエラー表示)
+  } catch (err) {
+    showError(err && err.message ? err.message : String(err));
     return;
   }
-  runTranslation(request);
-}
 
-function runTranslation({ text, direction: dir }) {
-  if (!modelReady || !worker) return;
   generating = true;
   resultText = '';
+  lastResult = '';
   activeRequest = ++requestSeq;
-  updateTranslateEnabled();
+  updateRunEnabled();
   $outputText.innerHTML = '<span class="streaming-cursor"></span>';
   $copyBtn.style.display = 'none';
   $metricsBar.style.display = 'none';
@@ -265,10 +243,12 @@ function runTranslation({ text, direction: dir }) {
   $speedValue.textContent = '— tok/s';
 
   worker.postMessage({
-    type: 'translate',
+    type: 'run',
     requestId: activeRequest,
-    text,
-    direction: dir,
+    taskKey,
+    input,
+    question: payload.question,
+    fields: payload.fields,
   });
 }
 
@@ -281,10 +261,11 @@ function handleToken(message) {
 function handleResult(message) {
   if (message.requestId !== activeRequest) return;
   generating = false;
-  const text = cleanTranslation(message.text ?? resultText);
-  $outputText.textContent = text || '(出力なし)';
-  if (text) $copyBtn.style.display = 'flex';
-  updateStreamingCursor();
+
+  lastResult = formatResult(message.text ?? resultText, message.taskKey || taskKey);
+  $outputText.textContent = lastResult || '(出力なし)';
+  if (lastResult) $copyBtn.style.display = 'flex';
+  removeCursor();
 
   const tokens = Number(message.tokens) || 0;
   const elapsedMs = Number(message.elapsedMs) || 0;
@@ -292,22 +273,12 @@ function handleResult(message) {
   $speedValue.textContent = `${formatSpeed(tokens, elapsedMs)} tok/s`;
   $metricsBar.style.display = 'flex';
 
-  updateTranslateEnabled();
-
-  if (queued) {
-    const next = queued;
-    queued = null;
-    runTranslation(next);
-  }
+  updateRunEnabled();
 }
 
-function updateStreamingCursor() {
+function removeCursor() {
   const cursor = $outputText.querySelector('.streaming-cursor');
-  if (cursor && !generating) cursor.remove();
-}
-
-function cancelPending() {
-  queued = null;
+  if (cursor) cursor.remove();
 }
 
 /* ==========================================================
@@ -319,26 +290,14 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function updateDirection() {
-  if (direction === 'en-to-jp') {
-    $sourceLang.textContent = 'English';
-    $targetLang.textContent = '日本語';
-    $outputLang.textContent = '日本語';
-    $sourceText.placeholder = 'Enter text to translate…';
-  } else {
-    $sourceLang.textContent = '日本語';
-    $targetLang.textContent = 'English';
-    $outputLang.textContent = 'English';
-    $sourceText.placeholder = '翻訳するテキストを入力…';
-  }
-}
-
-function updateTranslateEnabled() {
-  $translateBtn.disabled = !(modelReady && !generating);
-}
-
 function updateCharCount() {
-  $charCount.textContent = $sourceText.value.length;
+  const length = $inputText.value.length;
+  $charCount.textContent = `${length} / ${MAX_INPUT_CHARS}`;
+  $charCount.classList.toggle('over-limit', length > MAX_INPUT_CHARS);
+}
+
+function updateRunEnabled() {
+  $runBtn.disabled = !(modelReady && !generating);
 }
 
 function updateBackendBadge(ep, supportsFp16) {
@@ -357,69 +316,77 @@ function updateBackendBadge(ep, supportsFp16) {
 
 function updateModelBadge(message) {
   const size = formatBytes(
-    Number(message.bytes) || estimateModelBytes(message.modeKey, message.device || 'wasm'),
+    Number(message.bytes) || estimateModelBytes('lfm25-1.2b-jp', message.device || 'wasm'),
   );
-  $backendBadge.textContent = `${
-    message.device === 'webgpu' ? 'WebGPU' : 'WASM'
-  } / ${message.shortLabel} (${message.dtype}, ${size})`;
+  $modelBadge.textContent = `モデル: ${message.shortLabel || 'LFM2.5 1.2B JP'} (${message.dtype}, ${size})`;
+}
+
+/* ==========================================================
+   タスク切替
+   ========================================================== */
+function populateTaskTabs() {
+  for (const task of TASKS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'task-tab';
+    button.dataset.task = task.key;
+    button.textContent = task.label;
+    button.addEventListener('click', () => selectTask(task.key));
+    $taskTabs.appendChild(button);
+  }
+}
+
+function selectTask(key) {
+  taskKey = key;
+  const task = getTask(key);
+  for (const button of $taskTabs.querySelectorAll('.task-tab')) {
+    button.classList.toggle('active', button.dataset.task === key);
+    button.setAttribute('aria-selected', button.dataset.task === key ? 'true' : 'false');
+  }
+  $questionField.style.display = key === 'qa' ? 'block' : 'none';
+  $fieldsField.style.display = key === 'extract' ? 'block' : 'none';
+  setStatus(task.description);
 }
 
 /* ==========================================================
    初期化 (UI)
    ========================================================== */
-function populateModeSelect() {
-  for (const model of listModels()) {
-    const option = document.createElement('option');
-    option.value = model.key;
-    option.textContent = `${model.label} — ${model.description}`;
-    $modeSelect.appendChild(option);
-  }
-  $modeSelect.value = DEFAULT_MODE;
-}
-
 function updateConsentInfo() {
-  const choice = chooseModel($modeSelect.value, hasWebGPU);
+  const choice = chooseModel('lfm25-1.2b-jp', hasWebGPU);
   $modelSize.textContent = formatBytes(estimateModelBytes(choice.modeKey, choice.device));
   $modelLicense.textContent = `使用モデル: ${choice.shortLabel} / ライセンス: ${choice.license}`;
 }
 
 function setupInteractions() {
-  $translateBtn.addEventListener('click', translate);
+  $runBtn.addEventListener('click', runTask);
 
-  $sourceText.addEventListener('keydown', (e) => {
+  $inputText.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-      translate();
+      runTask();
     }
   });
 
-  $swapBtn.addEventListener('click', () => {
-    direction = direction === 'en-to-jp' ? 'jp-to-en' : 'en-to-jp';
-    updateDirection();
-
-    const outputContent = $outputText.textContent;
-    if (outputContent && outputContent !== OUTPUT_PLACEHOLDER) {
-      $sourceText.value = outputContent;
-      $outputText.innerHTML = `<span class="output-placeholder">${OUTPUT_PLACEHOLDER}</span>`;
-      $copyBtn.style.display = 'none';
-      $metricsBar.style.display = 'none';
-      updateCharCount();
-    }
+  $inputText.addEventListener('input', () => {
+    updateCharCount();
+    $clearBtn.style.display = $inputText.value ? 'flex' : 'none';
   });
 
   $clearBtn.addEventListener('click', () => {
-    cancelPending();
-    $sourceText.value = '';
+    $inputText.value = '';
+    $questionInput.value = '';
+    $fieldsInput.value = DEFAULT_FIELDS.join(', ');
+    lastResult = '';
     $outputText.innerHTML = `<span class="output-placeholder">${OUTPUT_PLACEHOLDER}</span>`;
-    $clearBtn.style.display = 'none';
     $copyBtn.style.display = 'none';
     $metricsBar.style.display = 'none';
+    $clearBtn.style.display = 'none';
     updateCharCount();
-    $sourceText.focus();
+    $inputText.focus();
   });
 
   $copyBtn.addEventListener('click', async () => {
-    const text = $outputText.textContent;
+    const text = lastResult || $outputText.textContent;
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
@@ -433,39 +400,16 @@ function setupInteractions() {
     }
   });
 
-  $sourceText.addEventListener('input', () => {
-    updateCharCount();
-    $clearBtn.style.display = $sourceText.value ? 'flex' : 'none';
-
-    if ($realtimeToggle.checked && $sourceText.value.trim()) {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(translate, DEBOUNCE_MS);
-    }
-  });
-
-  $realtimeToggle.addEventListener('change', () => {
-    if ($realtimeToggle.checked) {
-      $translateBtn.classList.add('hidden');
-      $modeHint.textContent = '入力するたびに自動翻訳されます';
-      if ($sourceText.value.trim()) translate();
-    } else {
-      $translateBtn.classList.remove('hidden');
-      $modeHint.textContent = 'タイピングしながらリアルタイムで翻訳';
-    }
-  });
-
-  $modeSelect.addEventListener('change', () => {
-    updateConsentInfo();
-    if (!appReady) return;
-    requestModelLoad();
-  });
-
   $aboutBtn.addEventListener('click', () => {
-    $aboutPanel.style.display = $aboutPanel.style.display === 'none' ? 'block' : 'none';
+    $infoModal.style.display = 'flex';
   });
-  $aboutClose.addEventListener('click', () => {
-    $aboutPanel.style.display = 'none';
+  $closeInfoBtn.addEventListener('click', () => {
+    $infoModal.style.display = 'none';
   });
+  $infoModal.addEventListener('click', (event) => {
+    if (event.target === $infoModal) $infoModal.style.display = 'none';
+  });
+
   $clearCacheBtn.addEventListener('click', () => {
     if (
       !confirm(
@@ -476,17 +420,17 @@ function setupInteractions() {
     }
     if (worker) worker.postMessage({ type: 'clear-cache' });
   });
-
-  updateCharCount();
-  updateDirection();
-  updateTranslateEnabled();
 }
 
 /* ==========================================================
    起動
    ========================================================== */
-populateModeSelect();
+populateTaskTabs();
+selectTask(DEFAULT_TASK);
+$fieldsInput.value = DEFAULT_FIELDS.join(', ');
 updateConsentInfo();
+updateCharCount();
+updateRunEnabled();
 
 $consentBtn.addEventListener('click', () => {
   clearError();
