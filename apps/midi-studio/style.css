@@ -1,0 +1,339 @@
+/* ==========================================================
+   MIDI スタジオ — アプリ固有スタイル
+   ========================================================== */
+
+:root {
+  --app-color: #e11d48;
+  --roll-grid: rgba(148, 163, 184, 0.22);
+  --roll-beat: rgba(148, 163, 184, 0.42);
+  --roll-bar: rgba(148, 163, 184, 0.7);
+  --roll-black-row: rgba(15, 23, 42, 0.05);
+  --note-fill: rgba(225, 29, 72, 0.85);
+  --note-stroke: #be123c;
+  --note-selected: #f59e0b;
+}
+
+[data-theme="dark"] {
+  --roll-grid: rgba(148, 163, 184, 0.14);
+  --roll-beat: rgba(148, 163, 184, 0.26);
+  --roll-bar: rgba(226, 232, 240, 0.45);
+  --roll-black-row: rgba(255, 255, 255, 0.04);
+  --note-fill: rgba(244, 63, 94, 0.85);
+  --note-stroke: #fda4af;
+  --note-selected: #fbbf24;
+}
+
+.app-main {
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: calc(var(--sp-16) + var(--sp-2)) var(--sp-4) var(--sp-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.card {
+  background: var(--c-surface-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+/* ---------- ボタン ---------- */
+
+.btn {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.btn:active {
+  transform: translateY(0);
+}
+.btn:focus-visible,
+.btn-icon:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+.btn-primary {
+  color: #fff;
+  background: var(--app-color);
+  border-color: transparent;
+}
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--app-color) 88%, #000);
+}
+.btn-secondary {
+  background: var(--c-surface-solid);
+}
+.btn-danger {
+  color: var(--c-error);
+  border-color: color-mix(in srgb, var(--c-error) 40%, transparent);
+  background: color-mix(in srgb, var(--c-error) 6%, var(--c-surface-solid));
+}
+.btn-icon {
+  font-family: var(--font);
+  font-size: var(--text-lg);
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+
+/* ---------- ツールバー ---------- */
+
+.toolbar {
+  padding: var(--sp-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.toolbar-group + .toolbar-group {
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--c-border);
+}
+.toolbar-settings {
+  gap: var(--sp-4);
+}
+.field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+}
+.field select,
+.field input[type="number"],
+.field input[type="text"] {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: 4px var(--sp-2);
+}
+.field input[type="range"] {
+  width: 130px;
+  accent-color: var(--app-color);
+}
+.status-text {
+  flex-basis: 100%;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+}
+
+/* ---------- ワークスペース ---------- */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: stretch;
+}
+
+.side-panel {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+.track-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.track-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-sm);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-surface-solid);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-default);
+}
+.track-item:hover {
+  border-color: var(--app-color);
+}
+.track-item.active {
+  border-color: var(--app-color);
+  background: color-mix(in srgb, var(--app-color) 10%, var(--c-surface-solid));
+  font-weight: 600;
+}
+.track-item .track-count {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+}
+.track-props {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border-top: 1px solid var(--c-border);
+  padding-top: var(--sp-3);
+}
+.field-block {
+  display: flex;
+  flex-direction: column;
+}
+.side-note {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  line-height: 1.5;
+}
+.side-note code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--c-surface-alt, rgba(148, 163, 184, 0.15));
+  padding: 1px 4px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- ピアノロール ---------- */
+
+.roll-panel {
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.roll-container {
+  position: relative;
+  overflow: auto;
+  height: min(62vh, 640px);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-surface-solid);
+  overscroll-behavior: contain;
+}
+#roll-canvas {
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+.roll-container.dragover {
+  outline: 2px dashed var(--app-color);
+  outline-offset: -6px;
+}
+.drop-hint {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: none;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-sm);
+  color: var(--app-color);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--app-color);
+  border-radius: var(--r);
+  pointer-events: none;
+}
+.roll-container.dragover .drop-hint {
+  display: block;
+}
+.roll-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--c-text-2);
+}
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- ヘルプ ---------- */
+
+.help {
+  padding: var(--sp-4);
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+}
+.help summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.help ul {
+  margin-top: var(--sp-2);
+  padding-left: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------- レスポンシブ ---------- */
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .roll-container {
+    height: 52vh;
+  }
+}
+@media (max-width: 560px) {
+  .toolbar {
+    gap: var(--sp-2);
+  }
+  .toolbar-group + .toolbar-group {
+    padding-left: 0;
+    border-left: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .track-item {
+    transition: none;
+  }
+}

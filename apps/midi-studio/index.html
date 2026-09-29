@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI スタジオ — MyApps</title>
+  <meta name="description" content="MIDI をブラウザ内で表示・編集・再生・書き出し。piano roll、Web MIDI / QWERTY 入力、簡易シンセ、.mid 保存に対応。ファイルは送信しません。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+  <main class="app-main">
+    <!-- ツールバー -->
+    <section class="card toolbar">
+      <div class="toolbar-group">
+        <button id="btn-new" class="btn btn-secondary" type="button">新規</button>
+        <button id="btn-open" class="btn btn-secondary" type="button">.mid を開く</button>
+        <button id="btn-save" class="btn btn-primary" type="button">.mid を保存</button>
+        <input id="file-input" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" hidden />
+      </div>
+
+      <div class="toolbar-group">
+        <button id="btn-play" class="btn btn-primary" type="button">▶ 再生</button>
+        <button id="btn-stop" class="btn btn-secondary" type="button">■ 停止</button>
+      </div>
+
+      <div class="toolbar-group">
+        <button id="btn-quantize" class="btn btn-secondary" type="button">クオンタイズ</button>
+        <button id="btn-transpose-down" class="btn btn-secondary" type="button" title="選択音符を半音下げる">−1</button>
+        <button id="btn-transpose-up" class="btn btn-secondary" type="button" title="選択音符を半音上げる">+1</button>
+        <button id="btn-delete-note" class="btn btn-danger" type="button">音符を削除</button>
+        <button id="btn-clear-track" class="btn btn-danger" type="button">トラックを空に</button>
+      </div>
+
+      <div class="toolbar-group toolbar-settings">
+        <label class="field">
+          <span>スナップ</span>
+          <select id="snap-select"></select>
+        </label>
+        <label class="field">
+          <span>音色</span>
+          <select id="waveform-select">
+            <option value="triangle">トライアングル</option>
+            <option value="sine">サイン</option>
+            <option value="square">スクエア</option>
+            <option value="sawtooth">ノコギリ</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>QWERTY 基準</span>
+          <select id="octave-select">
+            <option value="2">C2</option>
+            <option value="3">C3</option>
+            <option value="4" selected>C4</option>
+            <option value="5">C5</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>ズーム</span>
+          <input id="zoom-range" type="range" min="12" max="240" step="4" value="72" />
+        </label>
+      </div>
+
+      <p id="status" class="status-text">準備完了 — 空のプロジェクトから始められます</p>
+    </section>
+
+    <!-- ワークスペース -->
+    <div class="workspace">
+      <!-- トラック一覧 -->
+      <aside class="card side-panel">
+        <div class="panel-head">
+          <h2 class="panel-title">トラック</h2>
+          <button id="btn-add-track" class="btn-icon" type="button" title="トラックを追加">＋</button>
+        </div>
+        <ul id="track-list" class="track-list"></ul>
+
+        <div class="track-props">
+          <label class="field field-block">
+            <span>名前</span>
+            <input id="track-name" type="text" placeholder="Piano" />
+          </label>
+          <label class="field field-block">
+            <span>MIDI チャンネル (1–16)</span>
+            <input id="track-channel" type="number" min="1" max="16" value="1" />
+          </label>
+          <label class="field field-block">
+            <span>プログラム (1–128)</span>
+            <input id="track-program" type="number" min="1" max="128" value="1" />
+          </label>
+        </div>
+
+        <p class="side-note">
+          入力: 下の鍵盤か Web MIDI コントローラ、または QWERTY
+          (<code>a w s e d f t g y h u j k</code>)。
+        </p>
+      </aside>
+
+      <!-- ピアノロール -->
+      <section class="card roll-panel">
+        <div id="roll-container" class="roll-container">
+          <canvas id="roll-canvas"></canvas>
+          <div id="drop-hint" class="drop-hint">ここに .mid ファイルをドロップ</div>
+        </div>
+        <div class="roll-footer">
+          <span id="cursor-info" class="mono">—</span>
+          <span id="note-count" class="mono">0 音符</span>
+          <span id="time-info" class="mono">0:00.0</span>
+          <span id="midi-status" class="mono">Web MIDI: 未初期化</span>
+        </div>
+      </section>
+    </div>
+
+    <details class="help card">
+      <summary>使い方</summary>
+      <ul>
+        <li><strong>音符を追加</strong>: ピアノロールの空き部分をクリック (スナップ位置に配置)。</li>
+        <li><strong>移動 / 長さ変更</strong>: 音符をドラッグ。右端をドラッグすると長さが変わります。</li>
+        <li><strong>再生 / 入力</strong>: 簡易シンセ (Web Audio) で再生します。鍵盤クリック・Web MIDI・QWERTY で音を出し、選択トラックに録音できます。</li>
+        <li><strong>書き出し</strong>: 「.mid を保存」で標準 MIDI ファイルをダウンロード。すべてブラウザ内で完結し、ファイルは送信しません。</li>
+      </ul>
+    </details>
+  </main>
+
+  <script src="../../shared/header.js"
+    data-app-name="MIDI スタジオ"
+    data-app-icon="piano"
+    data-app-color="#e11d48"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

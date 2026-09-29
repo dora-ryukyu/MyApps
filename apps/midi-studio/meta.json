@@ -1,0 +1,8 @@
+{
+  "id": "midi-studio",
+  "name": "MIDI スタジオ",
+  "description": "MIDI をブラウザ内で表示・編集・再生・書き出し。piano roll、Web MIDI / QWERTY 入力、簡易シンセ、.mid 保存に対応。ファイルは送信しません。",
+  "icon": "piano",
+  "color": "#e11d48",
+  "tags": ["音楽", "MIDI", "DTM", "作曲", "Web MIDI"]
+}
