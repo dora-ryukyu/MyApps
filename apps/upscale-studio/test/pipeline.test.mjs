@@ -283,8 +283,8 @@ test('画像形式の判定', () => {
 });
 
 test('依存のバージョンとキャッシュ名が固定されている', () => {
-  assert.equal(TRANSFORMERS_VERSION, '4.2.0');
-  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.2.0'));
+  assert.equal(TRANSFORMERS_VERSION, '4.3.0');
+  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.3.0'));
   assert.equal(ONNXRUNTIME_VERSION, '1.22.0');
   assert.ok(ONNXRUNTIME_MODULE_URL.includes('onnxruntime-web@1.22.0'));
   assert.ok(ONNXRUNTIME_WASM_PATH.endsWith('/dist/'));

@@ -1,4 +1,4 @@
-import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers";
+import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0";
 
 // 環境設定
 env.allowLocalModels = false;
