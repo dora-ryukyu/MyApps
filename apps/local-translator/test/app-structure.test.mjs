@@ -153,6 +153,23 @@ test('index.html が参照するローカル資産はすべて存在する', () 
   }
 });
 
+test('script.js は Chrome 内蔵 AI API を feature detect して使う', () => {
+  assert.ok(scriptJs.includes("from '../../shared/builtin-ai.mjs'"), '共通ロジックを import していない');
+  assert.ok(scriptJs.includes('globalThis.Translator'), 'Translator の feature detect が無い');
+  assert.ok(scriptJs.includes('globalThis.LanguageDetector'), 'LanguageDetector の feature detect が無い');
+  assert.ok(scriptJs.includes('translatorApi.availability'), 'availability() を確認していない');
+  assert.ok(scriptJs.includes('BUILTIN_BACKEND'), '内蔵バックエンドの分岐が無い');
+  assert.ok(scriptJs.includes('detectDirection'), '言語検出から方向決定をしていない');
+  assert.ok(scriptJs.includes('builtinTranslators'), 'Translator のキャッシュが無い');
+});
+
+test('同意画面は内蔵翻訳の説明を出し分ける', () => {
+  assert.ok(indexHtml.includes('id="consent-lead"'));
+  assert.ok(indexHtml.includes('id="builtin-note"'));
+  assert.ok(scriptJs.includes('builtinTranslationInfo'));
+  assert.ok(scriptJs.includes('$builtinNote'));
+});
+
 test('JS の相対 import / worker URL の参照先は存在する', () => {
   for (const code of [scriptJs, workerJs]) {
     const imports = [...code.matchAll(/from\s+'(\.[^']+)'/g)].map((m) => m[1]);

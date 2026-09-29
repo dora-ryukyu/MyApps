@@ -30,6 +30,8 @@
             <button class="tab-btn" data-target="tab-case">Case & Slug</button>
             <button class="tab-btn" data-target="tab-width">全角/半角</button>
             <button class="tab-btn" data-target="tab-count">文字数カウント</button>
+            <!-- Chrome 内蔵 Summarizer API が使えるときだけ表示する (summarizer.js) -->
+            <button class="tab-btn" data-target="tab-summarizer" id="tab-summarizer-btn" hidden>要約</button>
         </div>
 
         <div class="tab-content active" id="tab-laundry">
@@ -127,6 +129,57 @@
             </section>
         </div>
 
+        <div class="tab-content" id="tab-summarizer">
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>要約 (ブラウザ内蔵)</h2>
+                </div>
+                <p class="summarizer-note">
+                    Chrome 138 以降のデスクトップ Chrome に内蔵された Summarizer API で長文を要約します。
+                    モデルはブラウザが管理するため、アプリ側のダウンロードはありません。
+                </p>
+                <div class="split-layout">
+                    <div class="pane">
+                        <div class="pane-header">
+                            <h3>入力テキスト</h3>
+                        </div>
+                        <textarea id="summarizer-input" class="text-editor"
+                            placeholder="要約するテキストを貼り付けてください..."></textarea>
+                    </div>
+                    <div class="controls-pane">
+                        <h3>オプション</h3>
+                        <label class="check-label" for="summarizer-type">種類
+                            <select id="summarizer-type">
+                                <option value="key-points">箇条書き (key-points)</option>
+                                <option value="tldr">TL;DR</option>
+                                <option value="teaser">ティーザー</option>
+                                <option value="headline">見出し</option>
+                            </select>
+                        </label>
+                        <label class="check-label" for="summarizer-length">長さ
+                            <select id="summarizer-length">
+                                <option value="short">短い</option>
+                                <option value="medium">中</option>
+                                <option value="long">長い</option>
+                            </select>
+                        </label>
+                        <div class="actions">
+                            <button class="btn btn-primary" id="summarizer-run" type="button">要約する</button>
+                            <button class="btn btn-ghost" id="summarizer-clear" type="button">クリア</button>
+                        </div>
+                        <p class="summarizer-status" id="summarizer-status" role="status"></p>
+                    </div>
+                    <div class="pane">
+                        <div class="pane-header">
+                            <h3>要約結果</h3>
+                            <button class="btn btn-ghost" id="summarizer-copy" type="button">Copy All</button>
+                        </div>
+                        <textarea id="summarizer-output" class="text-editor" readonly></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+
         <div class="tab-content" id="tab-count">
             <section class="panel">
                 <div class="panel-head">
@@ -170,6 +223,7 @@
 
     <script src="../../shared/header.js" data-app-name="Text Studio" data-app-icon="type"></script>
     <script src="script.js"></script>
+    <script type="module" src="summarizer.js"></script>
 </body>
 
 </html>
