@@ -459,6 +459,16 @@ function resizeAndDraw() {
   draw();
 }
 
+let resizeScheduled = false;
+function scheduleResize() {
+  if (resizeScheduled) return;
+  resizeScheduled = true;
+  requestAnimationFrame(() => {
+    resizeScheduled = false;
+    resizeAndDraw();
+  });
+}
+
 /* ==========================================================
    トラック UI
    ========================================================== */
@@ -920,9 +930,9 @@ updateFooter();
 resizeAndDraw();
 
 if (typeof ResizeObserver !== 'undefined') {
-  new ResizeObserver(() => resizeAndDraw()).observe(container);
+  new ResizeObserver(scheduleResize).observe(container);
 }
-window.addEventListener('resize', resizeAndDraw);
+window.addEventListener('resize', scheduleResize);
 
 initMidi();
 setStatus('準備完了 — 空のプロジェクトから始められます (Web MIDI / QWERTY で入力できます)');
