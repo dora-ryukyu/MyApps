@@ -111,6 +111,11 @@
           <span>無音で自動分割する（長い音声向け）</span>
         </label>
 
+        <label class="checkbox-row" for="speaker-toggle">
+          <input id="speaker-toggle" type="checkbox" />
+          <span>話者ラベルを付ける（話者分離・初回は追加モデルをダウンロード）</span>
+        </label>
+
         <div class="action-row">
           <button id="record-btn" class="btn btn-ghost" type="button">
             <svg id="record-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
@@ -128,6 +133,7 @@
           <span id="backend-badge" class="badge">バックエンド: 準備中</span>
           <span id="time-badge" class="badge">-</span>
           <span id="segment-badge" class="badge">区間: -</span>
+          <span id="speaker-badge" class="badge">話者: -</span>
         </div>
         <p id="status-text" class="status-text">モデルの準備を待っています…</p>
       </section>
@@ -166,6 +172,12 @@
         <strong>ibm-granite/granite-speech-4.1-2b</strong>（Apache 2.0）の ONNX 版。
         Granite Speech 4.1 2B は英語・フランス語・ドイツ語・スペイン語・ポルトガル語・日本語の
         音声認識と音声翻訳に対応します。ONNX Runtime Web の WebGPU で実行します。
+      </p>
+      <p>
+        「話者ラベルを付ける」を有効にすると、<strong>nvidia/Nemotron-3-Diarization</strong>
+        （OpenMDW-1.1、100M パラメータ、最大 8 話者）の ONNX 版で「誰がいつ話したか」を推定し、
+        文字起こしの各区間へ話者を割り当てます。話者分離モデルは初回のみ追加でダウンロードされ、
+        同じ Cache Storage に保存されます。
       </p>
       <h3>しくみ</h3>
       <ol>

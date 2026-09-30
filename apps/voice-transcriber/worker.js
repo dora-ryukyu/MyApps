@@ -20,7 +20,14 @@ import {
   DTYPE_WASM,
   buildTaskPrompt,
   sliceSeconds,
+  formatBytes,
+  DIARIZATION_MODEL_BASE_URL,
+  DIARIZATION_CACHE_NAME,
+  DIARIZATION_STREAMING_MODE,
+  resolveDiarizationDtype,
+  estimateDiarizationBytes,
 } from './pipeline.mjs';
+import { Diarizer, DEFAULT_FEATURE_CONFIG } from './diarizer.mjs';
 
 /* ==========================================================
    状態
@@ -293,6 +300,182 @@ async function clearCache() {
 }
 
 /* ==========================================================
+   話者分離 (Nemotron 3 Diarization)
+   ==========================================================
+   Transformers.js に diarization パイプラインが無いため、
+   onnxruntime-web を直接使ってストリーミング Sortformer を回す。
+   前処理・キャッシュ・後処理は diarizer.mjs の純粋ロジックに置く。
+   ========================================================== */
+
+const ORT_VERSION = '1.30.0';
+const ORT_MODULE_URL = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/ort.webgpu.min.mjs`;
+const ORT_WASM_PATHS = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
+
+let ort = null;
+let diarizer = null;
+
+async function loadOrt() {
+  if (ort) return ort;
+  status('diarization-library', 'ONNX Runtime Web を読み込み中…');
+  ort = await import(/* @vite-ignore */ ORT_MODULE_URL);
+  try {
+    ort.env.wasm.wasmPaths = ORT_WASM_PATHS;
+    ort.env.wasm.numThreads = 1;
+  } catch {
+    /* 環境によっては存在しない */
+  }
+  return ort;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`設定の取得に失敗しました: ${res.status} ${url}`);
+  return res.json();
+}
+
+/** レスポンスを読みつつ進捗を通知し、ArrayBuffer を返す */
+async function readWithProgress(response, onProgress) {
+  if (!response.body || typeof response.body.getReader !== 'function') {
+    return response.arrayBuffer();
+  }
+  const total = Number(response.headers.get('content-length')) || 0;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    if (onProgress) onProgress(loaded, total);
+  }
+  const out = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out.buffer;
+}
+
+/** Cache Storage (transformers-cache) に保存しつつ取得する */
+async function fetchCached(url, onProgress) {
+  if (typeof caches !== 'undefined') {
+    const cache = await caches.open(DIARIZATION_CACHE_NAME);
+    const hit = await cache.match(url);
+    if (hit) return hit.arrayBuffer();
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`モデルの取得に失敗しました: ${res.status} ${url}`);
+    const forCache = res.clone();
+    const buffer = await readWithProgress(res, onProgress);
+    try {
+      await cache.put(url, forCache);
+    } catch {
+      /* 容量不足などは無視して続行 */
+    }
+    return buffer;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`モデルの取得に失敗しました: ${res.status} ${url}`);
+  return readWithProgress(res, onProgress);
+}
+
+async function fetchDiarizationFiles(dtype) {
+  const base = DIARIZATION_MODEL_BASE_URL;
+  const report = (file) => (loaded, total) =>
+    post('progress', {
+      stage: 'diarization-download',
+      file,
+      loaded,
+      total,
+      percent: total > 0 ? (loaded / total) * 100 : 0,
+    });
+  const modelBuffer = await fetchCached(`${base}/onnx/model_${dtype}.onnx`, report(`model_${dtype}.onnx`));
+  const dataBuffer = await fetchCached(
+    `${base}/onnx/model_${dtype}.onnx_data`,
+    report(`model_${dtype}.onnx_data`),
+  );
+  return { modelBuffer, dataBuffer };
+}
+
+async function createDiarizationSession(runtime, device, dtype, files) {
+  return runtime.InferenceSession.create(files.modelBuffer, {
+    executionProviders: [device === 'webgpu' ? 'webgpu' : 'wasm'],
+    externalData: [{ path: `model_${dtype}.onnx_data`, data: files.dataBuffer }],
+    graphOptimizationLevel: 'all',
+  });
+}
+
+async function loadDiarizer(device) {
+  if (diarizer) return diarizer;
+  const runtime = await loadOrt();
+  const base = DIARIZATION_MODEL_BASE_URL;
+  let dtype = resolveDiarizationDtype(device);
+  status(
+    'diarization-model',
+    `話者分離モデルを読み込み中… (初回は約 ${formatBytes(estimateDiarizationBytes(dtype))} のダウンロード)`,
+  );
+
+  const [modelConfig, processorConfig] = await Promise.all([
+    fetchJson(`${base}/config.json`),
+    fetchJson(`${base}/processor_config.json`),
+  ]);
+
+  let files = await fetchDiarizationFiles(dtype);
+  let session;
+  try {
+    session = await createDiarizationSession(runtime, device, dtype, files);
+  } catch (err) {
+    if (device !== 'webgpu') throw err;
+    // WebGPU 経路が失敗したら WASM + q4 に落とす
+    console.warn('WebGPU での話者分離セッション作成に失敗。WASM にフォールバックします:', err);
+    dtype = resolveDiarizationDtype('wasm');
+    files = await fetchDiarizationFiles(dtype);
+    session = await createDiarizationSession(runtime, 'wasm', dtype, files);
+    device = 'wasm';
+  }
+
+  const makeTensor = (type, data, dims) => new runtime.Tensor(type, data, dims);
+  diarizer = new Diarizer(
+    session,
+    { model: modelConfig, processor: processorConfig },
+    DIARIZATION_STREAMING_MODE,
+    DEFAULT_FEATURE_CONFIG,
+    makeTensor,
+  );
+  post('diarization-ready', {
+    dtype,
+    device,
+    numSpeakers: diarizer.numSpeakers,
+    frameDuration: diarizer.frameDurationSeconds,
+  });
+  return diarizer;
+}
+
+async function diarize(samples) {
+  const instance = await loadDiarizer(backend);
+  instance.reset();
+  status('diarization', '話者を判定中…');
+  const startedAt = performance.now();
+  const pushed = await instance.push(samples);
+  const flushed = await instance.flush();
+  const probabilities = new Float32Array(pushed.probabilities.length + flushed.probabilities.length);
+  probabilities.set(pushed.probabilities, 0);
+  probabilities.set(flushed.probabilities, pushed.probabilities.length);
+  post(
+    'diarization',
+    {
+      probabilities: probabilities.buffer,
+      numFrames: pushed.numFrames + flushed.numFrames,
+      numSpeakers: instance.numSpeakers,
+      frameDuration: instance.frameDurationSeconds,
+      elapsedMs: Math.round(performance.now() - startedAt),
+    },
+    [probabilities.buffer],
+  );
+}
+
+/* ==========================================================
    メッセージ処理
    ========================================================== */
 self.addEventListener('message', async (event) => {
@@ -325,6 +508,17 @@ self.addEventListener('message', async (event) => {
     busy = true;
     try {
       const samples = new Float32Array(message.samples);
+      if (message.speakerMode) {
+        // 話者分離に失敗しても文字起こしは続行する
+        try {
+          await diarize(samples);
+        } catch (err) {
+          console.error('diarization failed:', err);
+          post('diarization-error', {
+            error: err && err.message ? err.message : String(err),
+          });
+        }
+      }
       await transcribe({ task: message.task, segments: message.segments || [], samples });
     } catch (err) {
       console.error(err);

@@ -17,6 +17,10 @@ import {
   computePeaks,
   findSpeechSegments,
   transcriptToText,
+  probabilitiesToSegments,
+  assignSpeakers,
+  formatSpeakerTranscript,
+  speakerLabel,
 } from './pipeline.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -36,6 +40,7 @@ const $appMain = $('app-main');
 const $errorBox = $('error-box');
 const $taskSelect = $('task-select');
 const $segmentToggle = $('segment-toggle');
+const $speakerToggle = $('speaker-toggle');
 const $recordBtn = $('record-btn');
 const $fileInput = $('file-input');
 const $audioDrop = $('audio-drop');
@@ -54,6 +59,7 @@ const $clearBtn = $('clear-btn');
 const $backendBadge = $('backend-badge');
 const $timeBadge = $('time-badge');
 const $segmentBadge = $('segment-badge');
+const $speakerBadge = $('speaker-badge');
 const $statusText = $('status-text');
 const $outputText = $('output-text');
 const $copyBtn = $('copy-btn');
@@ -77,6 +83,9 @@ let recordChunks = [];
 let recording = false;
 let results = []; // { start, end, text }
 let domSegments = []; // { start, end, text } 最終結果
+let diarization = null; // { probabilities, numFrames, numSpeakers, frameDuration }
+let speakerSegments = []; // { speaker, start, end }
+let speakerMode = false; // 実行時に話者分離を有効にしたか
 
 /* ==========================================================
    起動
@@ -124,6 +133,15 @@ function setupWorker() {
       case 'segment':
         handleSegment(message);
         break;
+      case 'diarization':
+        handleDiarization(message);
+        break;
+      case 'diarization-ready':
+        setStatus(`話者分離モデルを準備しました (最大 ${message.numSpeakers} 話者)`);
+        break;
+      case 'diarization-error':
+        showError(`話者分離に失敗しました: ${message.error}`);
+        break;
       case 'done':
         handleDone(message);
         break;
@@ -145,6 +163,14 @@ function setupWorker() {
    ローディング / エラー表示
    ========================================================== */
 function handleProgress(message) {
+  if (message.stage === 'diarization-download') {
+    if (message.total) {
+      setStatus(
+        `話者分離モデルをダウンロード中… ${formatBytes(message.loaded)} / ${formatBytes(message.total)}`,
+      );
+    }
+    return;
+  }
   if (message.stage !== 'download') return;
   const percent = Number(message.percent) || 0;
   if (percent > 0) $progressFill.style.width = `${Math.min(99, percent)}%`;
@@ -394,18 +420,29 @@ function startTranscribe() {
   running = true;
   results = [];
   domSegments = [];
+  diarization = null;
+  speakerSegments = [];
+  speakerMode = $speakerToggle.checked;
   renderOutput();
 
   const segments = buildSegments();
   const task = $taskSelect.value;
   $segmentBadge.textContent = `区間: ${segments.length}`;
+  $speakerBadge.textContent = speakerMode ? '話者: 判定中…' : '話者: -';
   $timeBadge.textContent = '-';
   setRunningUi(true);
-  setStatus(`推論中… (${segments.length} 区間)`);
+  setStatus(
+    speakerMode
+      ? `話者を判定してから推論します… (${segments.length} 区間)`
+      : `推論中… (${segments.length} 区間)`,
+  );
 
   // メイン側のサンプルを保持したまま、コピーをワーカーへ転送する
   const copy = currentSamples.slice();
-  worker.postMessage({ type: 'transcribe', task, segments, samples: copy.buffer }, [copy.buffer]);
+  worker.postMessage(
+    { type: 'transcribe', task, segments, samples: copy.buffer, speakerMode },
+    [copy.buffer],
+  );
 }
 
 function setRunningUi(isRunning) {
@@ -435,10 +472,32 @@ function handleSegment(message) {
   renderOutput();
 }
 
+function handleDiarization(message) {
+  diarization = {
+    probabilities: new Float32Array(message.probabilities),
+    numFrames: message.numFrames,
+    numSpeakers: message.numSpeakers,
+    frameDuration: message.frameDuration || 0.01,
+  };
+  speakerSegments = probabilitiesToSegments(
+    diarization.probabilities,
+    diarization.numFrames,
+    diarization.numSpeakers,
+    { frameDuration: diarization.frameDuration },
+  );
+  const speakers = new Set(speakerSegments.map((seg) => seg.speaker));
+  $speakerBadge.textContent = `話者: ${speakers.size}`;
+}
+
 function handleDone(message) {
   running = false;
   setRunningUi(false);
-  domSegments = results.filter(Boolean);
+  let rows = results.filter(Boolean);
+  if (speakerMode && speakerSegments.length > 0) {
+    rows = assignSpeakers(rows, speakerSegments);
+  }
+  results = rows;
+  domSegments = rows;
   renderOutput();
   $timeBadge.textContent = `${(message.elapsedMs / 1000).toFixed(1)} 秒`;
   const hasText = domSegments.some((s) => s.text.trim());
@@ -463,8 +522,12 @@ function renderOutput() {
     .map((row) => {
       const text = escapeHtml((row.text || '').trim()) || '<span class="muted">認識中…</span>';
       const cursor = row.partial ? '<span class="streaming-cursor"></span>' : '';
+      const speaker =
+        row.speaker === undefined
+          ? ''
+          : `<span class="speaker-label">${escapeHtml(speakerLabel(row.speaker))}</span>`;
       return `<div class="transcript-row"><span class="timestamp">${formatTimestamp(row.start)}</span>` +
-        `<span class="transcript-text">${text}${cursor}</span></div>`;
+        `${speaker}<span class="transcript-text">${text}${cursor}</span></div>`;
     })
     .join('');
   $outputText.innerHTML = html;
@@ -481,7 +544,7 @@ function escapeHtml(text) {
    コピー / 保存 / クリア
    ========================================================== */
 async function copyTranscript() {
-  const text = transcriptToText(domSegments);
+  const text = speakerMode ? formatSpeakerTranscript(domSegments) : transcriptToText(domSegments);
   if (!text) return;
   try {
     await navigator.clipboard.writeText(text);
@@ -492,7 +555,7 @@ async function copyTranscript() {
 }
 
 function downloadTranscript() {
-  const text = transcriptToText(domSegments);
+  const text = speakerMode ? formatSpeakerTranscript(domSegments) : transcriptToText(domSegments);
   if (!text) return;
   const blob = new Blob([text], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
@@ -509,6 +572,9 @@ function clearAll() {
   currentSamples = null;
   results = [];
   domSegments = [];
+  diarization = null;
+  speakerSegments = [];
+  speakerMode = false;
   if (currentObjectUrl) {
     URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = null;
@@ -521,6 +587,7 @@ function clearAll() {
   $waveformProgress.style.width = '0%';
   $audioTime.textContent = '0:00';
   $segmentBadge.textContent = '区間: -';
+  $speakerBadge.textContent = '話者: -';
   $timeBadge.textContent = '-';
   $copyBtn.disabled = true;
   $downloadBtn.disabled = true;

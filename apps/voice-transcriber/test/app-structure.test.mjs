@@ -95,6 +95,9 @@ test('worker.js の postMessage 型は script.js 側で処理される', () => {
     'ready',
     'partial',
     'segment',
+    'diarization',
+    'diarization-ready',
+    'diarization-error',
     'done',
     'error',
     'cache-cleared',
@@ -105,6 +108,23 @@ test('worker.js の postMessage 型は script.js 側で処理される', () => {
       `script.js が ${type} を処理していない`,
     );
   }
+});
+
+test('worker.js は話者分離を diarizer.mjs 経由で使う', () => {
+  assert.ok(workerJs.includes("from './diarizer.mjs'"));
+  assert.ok(workerJs.includes('Diarizer'));
+  assert.ok(workerJs.includes('InferenceSession'));
+  assert.ok(workerJs.includes('DIARIZATION_MODEL_BASE_URL'));
+  assert.ok(existsSync(resolve(appDir, 'diarizer.mjs')));
+});
+
+test('script.js は話者ラベル付きモードを送る', () => {
+  assert.ok(scriptJs.includes('speakerMode'));
+  assert.ok(scriptJs.includes('probabilitiesToSegments'));
+  assert.ok(scriptJs.includes('assignSpeakers'));
+  assert.ok(scriptJs.includes('formatSpeakerTranscript'));
+  assert.ok(indexHtml.includes('id="speaker-toggle"'));
+  assert.ok(indexHtml.includes('id="speaker-badge"'));
 });
 
 test('script.js は init / transcribe / cancel / clear-cache を worker に送る', () => {

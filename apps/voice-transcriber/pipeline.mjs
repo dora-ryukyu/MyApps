@@ -344,3 +344,193 @@ export function transcriptToText(segments) {
     .filter(Boolean)
     .join('\n\n');
 }
+
+/* ==========================================================
+   話者分離 (diarization) — Nemotron 3 Diarization
+   ==========================================================
+   モデルは 16kHz モノラルの音声から [T, 8] の話者ごと発話確率を返す。
+   ここにはモデル選択・確率→区間の変換・ASR 区間との突合・表示整形という
+   純粋ロジックだけを置く。推論そのものは worker.js / diarizer.mjs が担当する。
+
+   出典:
+     https://huggingface.co/onnx-community/Nemotron-3-Diarization-ONNX
+     https://huggingface.co/blog/nvidia/nemotron-diarization
+   ========================================================== */
+
+export const DIARIZATION_MODEL_ID = 'onnx-community/Nemotron-3-Diarization-ONNX';
+export const DIARIZATION_MODEL_BASE_URL = `https://huggingface.co/${DIARIZATION_MODEL_ID}/resolve/main`;
+/** Transformers.js と同じ Cache Storage を使い、モデルを再ダウンロードしない */
+export const DIARIZATION_CACHE_NAME = 'transformers-cache';
+export const DIARIZATION_STREAMING_MODE = 'offline';
+export const DIARIZATION_MAX_SPEAKERS = 8;
+
+/**
+ * dtype ごとの重みファイルと実バイト数 (2026-09-30 時点の HF API 実測)。
+ * 同意画面のサイズ表示とテストにだけ使う。
+ */
+export const DIARIZATION_VARIANTS = Object.freeze({
+  q4: Object.freeze({ 'onnx/model_q4.onnx': 359731, 'onnx/model_q4.onnx_data': 82768000 }),
+  q4f16: Object.freeze({ 'onnx/model_q4f16.onnx': 408120, 'onnx/model_q4f16.onnx_data': 73076608 }),
+  quantized: Object.freeze({
+    'onnx/model_quantized.onnx': 364375,
+    'onnx/model_quantized.onnx_data': 120479872,
+  }),
+  fp16: Object.freeze({ 'onnx/model_fp16.onnx': 351782, 'onnx/model_fp16.onnx_data': 199287808 }),
+  fp32: Object.freeze({ 'onnx/model.onnx': 303466, 'onnx/model.onnx_data': 398184448 }),
+});
+
+export const DIARIZATION_EXTRA_FILES = Object.freeze({
+  'config.json': 1623,
+  'processor_config.json': 623,
+});
+
+/** 実行環境ごとの既定 dtype。WebGPU は fp16 系、WASM は軽量な q4。 */
+export const DIARIZATION_DTYPE = Object.freeze({ webgpu: 'q4f16', wasm: 'q4' });
+
+export function resolveDiarizationDtype(device) {
+  return DIARIZATION_DTYPE[device] || DIARIZATION_DTYPE.wasm;
+}
+
+/** 初回ダウンロード量 (重み + config) をバイトで見積もる */
+export function estimateDiarizationBytes(dtype = 'q4') {
+  const files = DIARIZATION_VARIANTS[dtype];
+  if (!files) throw new Error(`未知の dtype です: ${dtype}`);
+  let total = 0;
+  for (const size of Object.values(files)) total += size;
+  for (const size of Object.values(DIARIZATION_EXTRA_FILES)) total += size;
+  return total;
+}
+
+/** 話者番号を表示名にする (0 → 話者A, 1 → 話者B, …) */
+export function speakerLabel(index) {
+  if (!Number.isInteger(index) || index < 0) return '話者不明';
+  if (index < 26) return `話者${String.fromCharCode(65 + index)}`;
+  return `話者${index + 1}`;
+}
+
+/** 2 つの区間 [start, end) の重なり秒数 */
+export function overlapSeconds(a, b) {
+  if (!a || !b) return 0;
+  const start = Math.max(a.start, b.start);
+  const end = Math.min(a.end, b.end);
+  return Math.max(0, end - start);
+}
+
+export const DEFAULT_DIARIZATION_OPTIONS = Object.freeze({
+  threshold: 0.5,
+  frameDuration: 0.01,
+  minDuration: 0.25,
+  mergeGap: 0.2,
+});
+
+/**
+ * [T, 8] の話者確率を話者区間 [{ speaker, start, end }] に変換する。
+ *
+ * 各フレームでしきい値以上の最大確率の話者を選び、連続するフレームを
+ * 1 区間にまとめる。同一話者の区間が短い無音 (mergeGap 以下) で分かれて
+ * いる場合は繋げ、minDuration 未満の区間は捨てる。
+ */
+export function probabilitiesToSegments(probabilities, numFrames, numSpeakers, options = {}) {
+  if (!probabilities || typeof probabilities.length !== 'number') {
+    throw new Error('probabilities が不正です');
+  }
+  if (!Number.isInteger(numFrames) || numFrames < 0) throw new Error('numFrames が不正です');
+  if (!Number.isInteger(numSpeakers) || numSpeakers <= 0) throw new Error('numSpeakers が不正です');
+  if (probabilities.length < numFrames * numSpeakers) {
+    throw new Error('probabilities の長さが不足しています');
+  }
+
+  const { threshold, frameDuration, minDuration, mergeGap } = {
+    ...DEFAULT_DIARIZATION_OPTIONS,
+    ...options,
+  };
+
+  // フレームごとの話者 (しきい値未満は -1)
+  const labels = new Int32Array(numFrames).fill(-1);
+  for (let f = 0; f < numFrames; f++) {
+    let best = -1;
+    let bestProb = threshold;
+    for (let s = 0; s < numSpeakers; s++) {
+      const p = probabilities[f * numSpeakers + s];
+      if (p > bestProb) {
+        bestProb = p;
+        best = s;
+      }
+    }
+    labels[f] = best;
+  }
+
+  // 連続する同一話者フレームをまとめる
+  const runs = [];
+  for (let f = 0; f < numFrames; f++) {
+    const speaker = labels[f];
+    if (speaker < 0) continue;
+    const last = runs[runs.length - 1];
+    if (last && last.speaker === speaker) last.endFrame = f + 1;
+    else runs.push({ speaker, startFrame: f, endFrame: f + 1 });
+  }
+
+  // 短い無音で分かれた同一話者を繋ぐ (間に別話者がいる場合は繋がない)
+  const merged = [];
+  for (const run of runs) {
+    const last = merged[merged.length - 1];
+    const gap = last ? (run.startFrame - last.endFrame) * frameDuration : Infinity;
+    if (last && last.speaker === run.speaker && gap <= mergeGap) last.endFrame = run.endFrame;
+    else merged.push({ ...run });
+  }
+
+  return merged
+    .map((run) => ({
+      speaker: run.speaker,
+      start: run.startFrame * frameDuration,
+      end: run.endFrame * frameDuration,
+    }))
+    .filter((seg) => seg.end - seg.start >= minDuration);
+}
+
+/**
+ * ASR の各区間へ、時間的に最も重なる話者分離区間の話者を割り当てる。
+ * 重なりが無い区間は speaker: null (話者不明) になる。
+ */
+export function assignSpeakers(asrSegments, diarSegments) {
+  if (!Array.isArray(asrSegments)) return [];
+  const diar = Array.isArray(diarSegments) ? diarSegments : [];
+  return asrSegments.map((seg) => {
+    let best = null;
+    let bestOverlap = 0;
+    for (const candidate of diar) {
+      const overlap = overlapSeconds(seg, candidate);
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        best = candidate;
+      }
+    }
+    return { ...seg, speaker: best ? best.speaker : null };
+  });
+}
+
+/**
+ * 話者ラベル付きのタイムラインを整形する。
+ * 連続する同一話者の区間は 1 行にまとめ、`[m:ss] 話者A: テキスト` を返す。
+ */
+export function formatSpeakerTranscript(segments) {
+  if (!Array.isArray(segments)) return '';
+  const blocks = [];
+  for (const seg of segments) {
+    const text = seg && seg.text ? String(seg.text).trim() : '';
+    if (!text) continue;
+    const speaker = seg.speaker === undefined ? null : seg.speaker;
+    const last = blocks[blocks.length - 1];
+    if (last && last.speaker === speaker) {
+      last.text += ` ${text}`;
+    } else {
+      blocks.push({ speaker, start: seg.start, text });
+    }
+  }
+  return blocks
+    .map((block) => {
+      const label = block.speaker === null ? '話者不明' : speakerLabel(block.speaker);
+      return `[${formatTimestamp(block.start)}] ${label}: ${block.text}`;
+    })
+    .join('\n\n');
+}
