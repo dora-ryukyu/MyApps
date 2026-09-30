@@ -923,6 +923,37 @@ $('track-program').addEventListener('change', (event) => {
    初期化
    ========================================================== */
 
+/**
+ * 音声→MIDI 採譜アプリからの受け渡し。
+ * sessionStorage に置かれたプロジェクトを読み込んで編集を続けられるようにする。
+ * キーは audio-to-midi/pipeline.mjs の MIDI_HANDOFF_KEY と一致させること。
+ */
+const MIDI_HANDOFF_KEY = 'myapps:midi-handoff';
+
+function consumeHandoff() {
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(MIDI_HANDOFF_KEY);
+    if (raw) sessionStorage.removeItem(MIDI_HANDOFF_KEY);
+  } catch {
+    return false;
+  }
+  if (!raw) return false;
+  let project = null;
+  try {
+    project = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+  if (!project || !Array.isArray(project.tracks) || project.tracks.length === 0) return false;
+  if (!(Number(project.ppq) > 0)) return false;
+  for (const track of project.tracks) {
+    if (!track || !Array.isArray(track.notes)) return false;
+  }
+  setProject(project);
+  return true;
+}
+
 $('zoom-range').value = String(state.pxPerQuarter);
 updateTrackList();
 syncTrackInputs();
@@ -935,4 +966,8 @@ if (typeof ResizeObserver !== 'undefined') {
 window.addEventListener('resize', scheduleResize);
 
 initMidi();
-setStatus('準備完了 — 空のプロジェクトから始められます (Web MIDI / QWERTY で入力できます)');
+if (consumeHandoff()) {
+  setStatus(`採譜結果を読み込みました (${countNotes(state.project)} 音符) — 編集して .mid に保存できます`);
+} else {
+  setStatus('準備完了 — 空のプロジェクトから始められます (Web MIDI / QWERTY で入力できます)');
+}
