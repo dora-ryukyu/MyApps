@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>物体検出 — Object Detector</title>
+  <meta name="description" content="画像から物体のラベル・確信度・矩形を検出。D-FINE nano を WebGPU・WASM でブラウザ内実行し、画像は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="../../shared/loader.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <!-- ローディング・同意画面 -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div id="consent-state">
+        <div class="loading-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></svg>
+        </div>
+        <h2 class="loading-title">物体検出</h2>
+        <p class="loading-subtitle">
+          初回利用時はモデル（約 <span id="model-size">-</span>）のダウンロードが必要です。<br>
+          推論はあなたの端末上で完結し、画像が外部に送信されることはありません。
+        </p>
+        <p class="loading-subtitle" id="model-license">使用モデル: - / ライセンス: -</p>
+        <button id="consent-btn" class="btn-consent">モデルをダウンロードして開始</button>
+      </div>
+
+      <div id="loading-state" style="display: none;">
+        <div class="loading-icon">
+          <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        </div>
+        <h2 class="loading-title">AI を準備中…</h2>
+        <p class="loading-subtitle" id="loading-status">モデルの初期化中…</p>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+        </div>
+        <p class="loading-hint" id="loading-hint">しばらくお待ちください</p>
+      </div>
+    </div>
+  </div>
+
+  <main class="app-container" id="app-main" style="display: none;">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">物体検出</h1>
+        <p class="app-subtitle">D-FINE nano をブラウザ内実行。「何がどこにあるか」を矩形で返し、切り出し・ぼかしに使えます。</p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" style="display: none;"></div>
+
+    <div class="layout-grid">
+      <!-- 左: 入力 -->
+      <section class="panel card">
+        <h2 class="panel-title">画像</h2>
+
+        <div id="image-drop" class="drop-zone">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p class="drop-title">ここに画像をドロップ</p>
+          <p class="drop-hint">または下のボタンで選択（PNG / JPEG / WebP / GIF / BMP / AVIF）</p>
+          <label class="btn btn-ghost file-label" for="file-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            <span>画像を選択</span>
+          </label>
+          <input id="file-input" type="file" accept="image/*" hidden />
+        </div>
+
+        <div class="source-preview-wrap">
+          <img id="source-preview" class="source-preview" alt="入力画像のプレビュー" />
+        </div>
+        <p id="source-name" class="file-name"></p>
+
+        <div class="field-row">
+          <label class="field-label" for="threshold-input">確信度のしきい値: <span id="threshold-value">-</span></label>
+          <input id="threshold-input" class="range-input" type="range" min="0.1" max="0.9" step="0.05" value="0.5" />
+          <p class="field-note">低いほど多くの物体を拾い、高いほど確実なものだけを残します。</p>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="iou-input">重複除去 (NMS の IoU): <span id="iou-value">-</span></label>
+          <input id="iou-input" class="range-input" type="range" min="0.1" max="0.95" step="0.05" value="0.6" />
+          <p class="field-note">同じクラスで重なりが大きい矩形をまとめます。</p>
+        </div>
+
+        <div class="action-row">
+          <button id="detect-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></svg>
+            <span>検出する</span>
+          </button>
+          <button id="clear-btn" class="btn btn-ghost" type="button">クリア</button>
+        </div>
+
+        <div id="detect-progress" class="progress-track process-progress" style="display: none;">
+          <div class="progress-fill" id="detect-progress-fill" style="width: 40%;"></div>
+        </div>
+
+        <div class="meta-row">
+          <span id="backend-badge" class="badge">バックエンド: 準備中</span>
+          <span id="model-badge" class="badge">モデル: -</span>
+          <span id="count-badge" class="badge">検出: -</span>
+          <span id="time-badge" class="badge">-</span>
+        </div>
+        <p id="status-text" class="status-text">モデルの準備を待っています…</p>
+      </section>
+
+      <!-- 右: 結果 -->
+      <section class="panel card output-panel">
+        <h2 class="panel-title">結果</h2>
+        <div class="result-stage">
+          <div id="result-empty" class="output-placeholder">ここに検出結果（画像 + 矩形）が表示されます</div>
+          <canvas id="result-canvas" class="result-canvas" style="display: none;"></canvas>
+        </div>
+
+        <div class="detection-panel">
+          <p id="selection-summary" class="field-note">検出結果はまだありません</p>
+          <div id="detection-list" class="detection-list"></div>
+          <p id="detection-empty" class="output-placeholder">物体を検出するとここに一覧が出ます</p>
+        </div>
+
+        <div class="action-row">
+          <button id="crop-btn" class="btn btn-ghost" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>
+            <span>選択した物体を切り出す</span>
+          </button>
+          <button id="blur-btn" class="btn btn-ghost" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>
+            <span>選択した物体をぼかす</span>
+          </button>
+          <button id="reset-view-btn" class="btn btn-ghost" type="button" disabled>矩形表示に戻す</button>
+        </div>
+
+        <div class="action-row">
+          <button id="download-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>PNG をダウンロード</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>物体検出について</h2>
+      <p>
+        画像の中にある物体を見つけ、ラベル・確信度・矩形（バウンディングボックス）を返します。
+        モデルのダウンロードと推論はすべてブラウザ内で行われ、画像がサーバーへ送信されることはありません。
+      </p>
+      <h3>使用モデル</h3>
+      <ul>
+        <li><strong>D-FINE nano（COCO）</strong>（Apache-2.0）— リアルタイム DETR 系の軽量物体検出。COCO の 80 クラス（人・乗り物・動物・家具・食べ物など）。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>画像をデコードし、ブラウザ内でモデルに渡す</li>
+        <li>物体ごとのクラス・確信度・矩形を取得する</li>
+        <li>しきい値で絞り込み、クラスごとの NMS で重複を除去する</li>
+        <li>WebGPU が使えれば WebGPU で、無ければ WASM に自動フォールバック</li>
+        <li>検出矩形から切り出し・ぼかし（伏せ字）を行う</li>
+      </ol>
+      <h3>できないこと</h3>
+      <p>
+        COCO の 80 クラスのみが対象です。顔・ナンバープレート・日本語テキストなどは検出できません。
+        文字の読み取りは OCR 系、画像全体の説明は VLM 系のアプリが担当します。
+      </p>
+      <h3>保存とプライバシー</h3>
+      <p>
+        モデルはブラウザの Cache Storage（<code>transformers-cache</code>）に保存され、
+        2 回目以降は再ダウンロードされません。画像は端末内でのみ処理されます。
+      </p>
+      <button id="clear-cache-btn" class="btn btn-danger" type="button">モデルキャッシュを削除</button>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="物体検出"
+    data-app-icon="scan-search"
+    data-app-color="#0891b2"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>

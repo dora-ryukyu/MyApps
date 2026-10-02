@@ -1,0 +1,8 @@
+{
+  "id": "object-detector",
+  "name": "物体検出",
+  "description": "画像から物体のラベル・確信度・矩形を検出。D-FINE nano を WebGPU・WASM でブラウザ内実行し、画像は送信しません。",
+  "icon": "scan-search",
+  "color": "#0891b2",
+  "tags": ["AI", "画像", "物体検出", "D-FINE", "WebGPU"]
+}
