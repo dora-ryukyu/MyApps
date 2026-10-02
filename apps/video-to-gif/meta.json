@@ -1,0 +1,8 @@
+{
+  "id": "video-to-gif",
+  "name": "動画 → GIF",
+  "description": "MP4 などの動画をカットして Discord 向け GIF に変換。fps・解像度・色数を調整でき、動画は送信しません。",
+  "icon": "film",
+  "color": "#d946ef",
+  "tags": ["動画", "GIF", "Discord", "変換", "ツール"]
+}

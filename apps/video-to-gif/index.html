@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>動画 → GIF — Video to GIF</title>
+  <meta name="description" content="MP4 などの動画をカットして Discord 向け GIF に変換。fps・解像度・色数を調整でき、動画は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">動画 → GIF</h1>
+        <p class="app-subtitle">
+          MP4 などの動画をカットして Discord 向けの GIF にします。fps・解像度・色数を調整でき、
+          動画は端末の外へ送信されません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- 動画の選択 -->
+    <section id="drop-section" class="panel card">
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="動画を選択">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
+        <p class="drop-title">ここに動画をドロップ</p>
+        <p class="drop-hint">または下のボタンで選択（MP4 / WebM / MOV などブラウザが再生できる動画）</p>
+        <p id="video-name" class="file-name"></p>
+        <p id="video-meta" class="file-meta"></p>
+        <label class="btn btn-primary file-label" for="file-input">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span>動画を選択</span>
+        </label>
+        <input id="file-input" type="file" accept="video/*,.mp4,.webm,.mov,.m4v" hidden />
+      </div>
+    </section>
+
+    <!-- 編集と設定 -->
+    <div id="editor-section" class="layout-grid" hidden>
+
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">プレビューとカット</h2>
+          <button id="clear-file-btn" class="btn btn-ghost btn-sm" type="button">別の動画を選ぶ</button>
+        </div>
+
+        <div class="video-stage">
+          <video id="video" playsinline muted preload="metadata"></video>
+        </div>
+
+        <div class="video-controls">
+          <button id="play-btn" class="btn btn-icon" type="button" aria-label="再生 / 一時停止">
+            <svg data-play-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <svg data-pause-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+          <span id="time-label" class="time-label">0:00.00 / 0:00.00</span>
+          <div class="spacer"></div>
+          <button id="set-in-btn" class="btn btn-ghost btn-sm" type="button" title="I キー">In を現在位置に</button>
+          <button id="set-out-btn" class="btn btn-ghost btn-sm" type="button" title="O キー">Out を現在位置に</button>
+          <button id="loop-btn" class="btn btn-ghost btn-sm is-active" type="button" aria-pressed="true">選択範囲をループ</button>
+        </div>
+
+        <div id="timeline-wrap" class="timeline-wrap">
+          <canvas id="timeline-canvas" width="900" height="64" aria-label="カット範囲のタイムライン"></canvas>
+        </div>
+
+        <div class="trim-fields">
+          <label class="field" for="in-input">
+            <span>開始 (In)</span>
+            <input id="in-input" type="number" min="0" step="0.05" inputmode="decimal" />
+          </label>
+          <label class="field" for="out-input">
+            <span>終了 (Out)</span>
+            <input id="out-input" type="number" min="0" step="0.05" inputmode="decimal" />
+          </label>
+        </div>
+        <p id="clip-info" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section class="panel card settings-panel">
+        <h2 class="panel-title">GIF 設定</h2>
+
+        <label class="field" for="preset-select">
+          <span>プリセット</span>
+          <select id="preset-select" class="select-input">
+            <option value="discord" selected>Discord 標準（480px / 12fps / 256色）</option>
+            <option value="light">軽量（320px / 10fps / 128色）</option>
+            <option value="quality">高画質（640px / 15fps / 256色）</option>
+            <option value="custom">カスタム</option>
+          </select>
+        </label>
+
+        <div class="field">
+          <div class="field-head">
+            <span>フレームレート</span>
+            <span id="fps-value" class="badge">12 fps</span>
+          </div>
+          <input id="fps-range" type="range" min="5" max="30" step="1" value="12" />
+        </div>
+
+        <label class="field" for="size-select">
+          <span>解像度（長辺）</span>
+          <select id="size-select" class="select-input">
+            <option value="640">640 px</option>
+            <option value="480" selected>480 px</option>
+            <option value="320">320 px</option>
+            <option value="240">240 px</option>
+            <option value="0">元のサイズ</option>
+          </select>
+        </label>
+
+        <label class="field" for="colors-select">
+          <span>色数</span>
+          <select id="colors-select" class="select-input">
+            <option value="256" selected>256色（高画質）</option>
+            <option value="128">128色</option>
+            <option value="64">64色（軽量）</option>
+          </select>
+        </label>
+
+        <label class="check-field">
+          <input id="diff-check" type="checkbox" checked />
+          <span>差分最適化（変化した部分だけを記録して容量を削減）</span>
+        </label>
+        <label class="check-field">
+          <input id="dither-check" type="checkbox" />
+          <span>ディザリング（グラデーションを滑らかに）</span>
+        </label>
+
+        <p id="estimate-info" class="hint" aria-live="polite"></p>
+
+        <div class="action-row">
+          <button id="generate-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
+            <span>GIF を作成</span>
+          </button>
+          <button id="cancel-btn" class="btn btn-ghost" type="button" hidden>キャンセル</button>
+        </div>
+
+        <div id="progress-wrap" class="progress-block" hidden>
+          <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+          <p id="progress-label" class="hint" aria-live="polite">準備中…</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- 結果 -->
+    <section id="result-section" class="panel card" hidden>
+      <h2 class="panel-title">結果</h2>
+      <div class="result-layout">
+        <div class="result-preview">
+          <img id="result-img" alt="生成された GIF のプレビュー" />
+        </div>
+        <div class="result-body">
+          <p id="result-meta" class="result-meta"></p>
+          <p id="result-warning" class="warning" role="status" hidden></p>
+          <div class="action-row">
+            <button id="download-btn" class="btn btn-primary" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>GIF をダウンロード</span>
+            </button>
+          </div>
+          <p class="hint">GIF はブラウザ内で生成されました。動画は送信されていません。</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="privacy-note">動画・GIF はすべて端末内で処理され、サーバーへ送信されません。</p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>動画 → GIF について</h2>
+      <p>
+        動画の好きな範囲を切り出して、Discord などで使えるアニメーション GIF にします。
+        デコードもエンコードもブラウザ内で完結し、動画がサーバーへ送信されることはありません。
+      </p>
+      <h3>使い方</h3>
+      <ol>
+        <li>動画を選び、タイムラインのハンドルをドラッグするか In / Out を入力して範囲を決めます。</li>
+        <li>ショートカット: <code>Space</code> 再生 / 一時停止、<code>I</code> / <code>O</code> で In / Out、<code>←</code> <code>→</code> でフレーム移動。</li>
+        <li>fps・解像度・色数を決めて「GIF を作成」を押します。</li>
+      </ol>
+      <h3>Discord 向けのコツ</h3>
+      <ul>
+        <li>短い範囲（数秒）ほど軽くなります。目安は 480px / 10〜15fps です。</li>
+        <li>「差分最適化」を有効にすると、動きの少ない動画ほど容量を削減できます。</li>
+        <li>アップロード上限を超える場合は、fps を下げる → 解像度を下げる → 範囲を短くする の順で調整してください。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>ブラウザの動画デコード機能で選択範囲のフレームを取り出し</li>
+        <li>メディアンカットで 256 色に量子化（任意でディザリング）</li>
+        <li>変化した矩形だけを透過付きで書き出す独自の GIF89a エンコーダ（Web Worker で実行）</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="動画 → GIF"
+    data-app-icon="film"
+    data-app-color="#d946ef"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
