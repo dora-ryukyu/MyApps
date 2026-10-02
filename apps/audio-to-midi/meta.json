@@ -1,0 +1,8 @@
+{
+  "id": "audio-to-midi",
+  "name": "音声→MIDI 採譜",
+  "description": "録音や音声ファイルをブラウザ内で採譜し、音符を piano roll で確認して .mid に書き出す。Basic Pitch を使い、音声は送信しません。",
+  "icon": "audio-lines",
+  "color": "#be185d",
+  "tags": ["音楽", "MIDI", "DTM", "採譜", "耳コピ", "AI"]
+}
