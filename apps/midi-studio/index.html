@@ -28,6 +28,7 @@
         <button id="btn-open" class="btn btn-secondary" type="button">.mid を開く</button>
         <button id="btn-save" class="btn btn-primary" type="button">.mid を保存</button>
         <a class="btn btn-secondary" href="../audio-to-midi/index.html">音声から採譜</a>
+        <a class="btn btn-secondary" href="../beat-analyzer/index.html">ビート解析</a>
         <input id="file-input" type="file" accept=".mid,.midi,audio/midi,audio/x-midi" hidden />
       </div>
 
@@ -71,9 +72,14 @@
           <span>ズーム</span>
           <input id="zoom-range" type="range" min="12" max="240" step="4" value="72" />
         </label>
+        <label class="field">
+          <span>ビート格子</span>
+          <input id="beat-grid-toggle" type="checkbox" checked />
+        </label>
       </div>
 
       <p id="status" class="status-text">準備完了 — 空のプロジェクトから始められます</p>
+      <p id="beat-grid-info" class="status-text beat-grid-info"></p>
     </section>
 
     <!-- ワークスペース -->

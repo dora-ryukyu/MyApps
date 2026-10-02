@@ -1,0 +1,315 @@
+/**
+ * ビート解析 — アプリ固有スタイル
+ * 共通トークン (shared/base.css) を参照し、アクセント色だけ上書きする。
+ */
+
+:root {
+  --c-accent: #0d9488;
+  --c-accent-soft: rgba(13, 148, 136, 0.12);
+}
+
+.app-container {
+  max-width: var(--w-page, 1280px);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4) var(--sp-12);
+}
+
+.app-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.app-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--sp-1);
+}
+
+.app-subtitle {
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  padding: var(--sp-5);
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 var(--sp-4);
+}
+
+/* ---------- 入力 ---------- */
+
+.drop-zone {
+  border: 2px dashed var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+  transition: border-color var(--duration) var(--ease-default), background var(--duration) var(--ease-default);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.drop-zone.has-audio {
+  border-style: solid;
+  border-color: var(--c-accent);
+}
+
+.drop-title {
+  font-weight: 600;
+  margin: var(--sp-2) 0 var(--sp-1);
+}
+
+.drop-hint {
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--sp-3);
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.record-status {
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+}
+
+.record-status.recording {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.file-name {
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+  margin: var(--sp-3) 0 0;
+  word-break: break-all;
+}
+
+.audio-preview {
+  width: 100%;
+  margin-top: var(--sp-3);
+}
+
+.field-row {
+  margin-top: var(--sp-4);
+}
+
+.field-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-bottom: var(--sp-2);
+}
+
+.range-input {
+  width: 100%;
+}
+
+.field-note {
+  color: var(--c-text-3);
+  font-size: 12px;
+  margin: var(--sp-1) 0 0;
+}
+
+.process-progress {
+  margin-top: var(--sp-4);
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-warning {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.status-text {
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+  margin: var(--sp-3) 0 0;
+}
+
+/* ---------- 結果 ---------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.stat {
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  color: var(--c-text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-accent);
+}
+
+.stat-note {
+  color: var(--c-text-3);
+  font-size: 11px;
+}
+
+.timeline-wrap {
+  position: relative;
+  min-height: 120px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--c-surface-solid);
+}
+
+.timeline-canvas {
+  display: block;
+  width: 100%;
+}
+
+.output-placeholder {
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--sp-8) var(--sp-4);
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  cursor: pointer;
+}
+
+/* ---------- エラー / モーダル ---------- */
+
+.error-box {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #b91c1c;
+  border-radius: var(--r);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+  font-size: var(--text-sm);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  z-index: 100;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: var(--sp-6);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-content h3 {
+  margin-bottom: var(--sp-1);
+}
+
+.modal-content p,
+.modal-content li {
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--c-text-3);
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r);
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: var(--sp-3);
+}

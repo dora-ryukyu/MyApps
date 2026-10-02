@@ -83,6 +83,8 @@ const state = {
   playheadSeconds: -1,
   scheduledVoices: [],
   master: null,
+  beatGrid: null,
+  showBeatGrid: true,
 };
 
 let audioCtx = null;
@@ -452,6 +454,33 @@ function draw() {
     ctx.lineTo(x, height);
     ctx.stroke();
   }
+
+  // ビート解析の格子 (beat-analyzer から受け渡し)
+  drawBeatGrid(width, height);
+}
+
+/**
+ * ビート解析アプリから渡されたビート格子を重ねる。
+ * ビートは細い線、ダウンビートは太い線。量子化の目安にする。
+ */
+function drawBeatGrid(width, height) {
+  const grid = state.beatGrid;
+  if (!grid || !state.showBeatGrid || !Array.isArray(grid.beats) || grid.beats.length === 0) return;
+  const downSet = new Set(Array.isArray(grid.downbeats) ? grid.downbeats : []);
+  const accent = cssVar('--c-accent', '#e11d48');
+  for (const t of grid.beats) {
+    const x = tickToX(secondsToTicks(t, state.project.ppq, state.project.bpm));
+    if (x < KEYBOARD_WIDTH || x > width) continue;
+    const strong = downSet.has(t);
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = strong ? 0.85 : 0.35;
+    ctx.lineWidth = strong ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, RULER_HEIGHT);
+    ctx.lineTo(x + 0.5, height);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function resizeAndDraw() {
@@ -903,6 +932,10 @@ $('zoom-range').addEventListener('input', (event) => {
   state.pxPerQuarter = Number(event.target.value);
   resizeAndDraw();
 });
+$('beat-grid-toggle').addEventListener('change', (event) => {
+  state.showBeatGrid = event.target.checked;
+  draw();
+});
 
 /* ==========================================================
    トラック設定
@@ -929,6 +962,8 @@ $('track-program').addEventListener('change', (event) => {
  * キーは audio-to-midi/pipeline.mjs の MIDI_HANDOFF_KEY と一致させること。
  */
 const MIDI_HANDOFF_KEY = 'myapps:midi-handoff';
+/** ビート解析アプリ (beat-analyzer) と共有するキー。両アプリで一致させること。 */
+const BEAT_HANDOFF_KEY = 'myapps:beat-grid';
 
 function consumeHandoff() {
   let raw = null;
@@ -954,6 +989,40 @@ function consumeHandoff() {
   return true;
 }
 
+/** ビート解析アプリからの格子を受け取る。 */
+function consumeBeatHandoff() {
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(BEAT_HANDOFF_KEY);
+    if (raw) sessionStorage.removeItem(BEAT_HANDOFF_KEY);
+  } catch {
+    return false;
+  }
+  if (!raw) return false;
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+  if (!parsed || !Array.isArray(parsed.beats) || parsed.beats.length === 0) return false;
+  for (const t of parsed.beats) if (!Number.isFinite(t)) return false;
+  state.beatGrid = {
+    bpm: Number.isFinite(parsed.bpm) ? parsed.bpm : 0,
+    beatsPerBar: Number.isFinite(parsed.beatsPerBar) ? parsed.beatsPerBar : 4,
+    beats: parsed.beats,
+    downbeats: Array.isArray(parsed.downbeats) ? parsed.downbeats : [],
+  };
+  state.showBeatGrid = true;
+  const toggle = $('beat-grid-toggle');
+  if (toggle) toggle.checked = true;
+  const info = $('beat-grid-info');
+  if (info) {
+    info.textContent = `ビート格子: ${state.beatGrid.beats.length} 拍 / ${state.beatGrid.bpm || '-'} BPM / ${state.beatGrid.beatsPerBar}/4`;
+  }
+  return true;
+}
+
 $('zoom-range').value = String(state.pxPerQuarter);
 updateTrackList();
 syncTrackInputs();
@@ -966,8 +1035,14 @@ if (typeof ResizeObserver !== 'undefined') {
 window.addEventListener('resize', scheduleResize);
 
 initMidi();
-if (consumeHandoff()) {
+const hadMidi = consumeHandoff();
+const hadBeats = consumeBeatHandoff();
+if (hadMidi && hadBeats) {
+  setStatus(`採譜結果 (${countNotes(state.project)} 音符) とビート格子 (${state.beatGrid.beats.length} 拍) を読み込みました`);
+} else if (hadMidi) {
   setStatus(`採譜結果を読み込みました (${countNotes(state.project)} 音符) — 編集して .mid に保存できます`);
+} else if (hadBeats) {
+  setStatus(`ビート格子を読み込みました (${state.beatGrid.beats.length} 拍 / ${state.beatGrid.bpm || '-'} BPM) — 量子化の目安にできます`);
 } else {
   setStatus('準備完了 — 空のプロジェクトから始められます (Web MIDI / QWERTY で入力できます)');
 }

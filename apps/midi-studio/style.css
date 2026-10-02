@@ -154,6 +154,10 @@ select:focus-visible {
   font-size: var(--text-sm);
   color: var(--c-text-2);
 }
+.beat-grid-info {
+  color: var(--app-color, var(--c-accent));
+  font-weight: 600;
+}
 
 /* ---------- ワークスペース ---------- */
 

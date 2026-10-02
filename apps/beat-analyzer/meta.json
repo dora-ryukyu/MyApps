@@ -1,0 +1,8 @@
+{
+  "id": "beat-analyzer",
+  "name": "ビート解析",
+  "description": "音源から BPM・拍子・ビート/ダウンビートをブラウザ内で検出し、クリック音で確認して JSON/CSV に書き出す。Beat This! を使い、音声は送信しません。",
+  "icon": "activity",
+  "color": "#0d9488",
+  "tags": ["音楽", "DTM", "音ゲー", "ビート", "BPM", "解析", "AI"]
+}
