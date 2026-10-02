@@ -209,7 +209,7 @@ test('画像形式の判定', () => {
 });
 
 test('Transformers.js のバージョンとキャッシュ名が固定されている', () => {
-  assert.equal(TRANSFORMERS_VERSION, '4.2.0');
-  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.2.0'));
+  assert.equal(TRANSFORMERS_VERSION, '4.3.0');
+  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.3.0'));
   assert.equal(CACHE_PREFIX, 'transformers-cache');
 });

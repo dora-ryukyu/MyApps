@@ -19,7 +19,7 @@
    Transformers.js / ONNX Runtime
    ========================================================== */
 
-export const TRANSFORMERS_VERSION = '4.2.0';
+export const TRANSFORMERS_VERSION = '4.3.0';
 export const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
 
 /** Real-ESRGAN エンジン用の onnxruntime-web (Transformers.js 内蔵版は取り出せないため別途読み込む) */

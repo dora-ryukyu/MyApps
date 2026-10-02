@@ -104,6 +104,9 @@ function setupWorker() {
       case 'token':
         handleToken(message);
         break;
+      case 'reset':
+        handleReset(message);
+        break;
       case 'result':
         handleResult(message);
         break;
@@ -256,6 +259,13 @@ function handleToken(message) {
   if (message.requestId !== activeRequest) return;
   resultText += message.text || '';
   $outputText.innerHTML = `${escapeHtml(resultText)}<span class="streaming-cursor"></span>`;
+}
+
+// 構造化出力が失敗して制約なしで再試行するとき、途中まで出た出力を捨てる。
+function handleReset(message) {
+  if (message.requestId !== activeRequest) return;
+  resultText = '';
+  $outputText.innerHTML = '<span class="streaming-cursor"></span>';
 }
 
 function handleResult(message) {

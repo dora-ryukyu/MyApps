@@ -176,8 +176,8 @@ test('formatBytes は 1024 基準、formatSpeed は tok/s', () => {
 });
 
 test('Transformers.js / キャッシュ / 上限が固定されている', () => {
-  assert.equal(TRANSFORMERS_VERSION, '4.2.0');
-  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.2.0'));
+  assert.equal(TRANSFORMERS_VERSION, '4.3.0');
+  assert.ok(TRANSFORMERS_MODULE_URL.includes('@huggingface/transformers@4.3.0'));
   assert.equal(CACHE_PREFIX, 'transformers-cache');
   assert.equal(MAX_INPUT_CHARS, 12000);
   assert.equal(DEFAULT_MAX_NEW_TOKENS, 512);

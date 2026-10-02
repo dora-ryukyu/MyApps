@@ -22,6 +22,11 @@ import {
   cleanOutput,
   getTask,
 } from './pipeline.mjs';
+import {
+  STRUCTURED_OUTPUT_MODULE_URL,
+  resolveResponseFormat,
+  createStructuredProcessor,
+} from './structured-output.mjs';
 
 /* ==========================================================
    状態
@@ -87,6 +92,29 @@ async function loadLibraries() {
     /* 環境によっては存在しない */
   }
   return tf;
+}
+
+/* ==========================================================
+   構造化出力 (Transformers.js v4.3 structured output)
+   ========================================================== */
+let structuredModulePromise = null;
+
+/**
+ * 構造化出力パッケージを読み込む。配信元の dist は
+ * `@huggingface/transformers` をベア識別子で import しているため、
+ * import map の適用されない worker では `/+esm` 経由で読む。
+ * 失敗したら null を返し、呼び出し側は通常生成へフォールバックする。
+ */
+function loadStructuredOutput() {
+  if (!structuredModulePromise) {
+    structuredModulePromise = import(/* @vite-ignore */ STRUCTURED_OUTPUT_MODULE_URL).catch(
+      (err) => {
+        console.warn('構造化出力モジュールを読み込めませんでした:', err);
+        return null;
+      },
+    );
+  }
+  return structuredModulePromise;
 }
 
 function makeProgressCallback() {
@@ -211,27 +239,57 @@ async function run({ taskKey, input, question, fields, requestId }) {
     let resultText = '';
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-    const streamer = new tf.TextStreamer(tokenizer, {
-      skip_prompt: true,
-      skip_special_tokens: true,
-      callback_function: (chunk) => {
-        resultText += chunk;
-        tokenCount++;
-        post('token', { requestId, text: chunk });
-      },
-    });
+    const makeStreamer = () =>
+      new tf.TextStreamer(tokenizer, {
+        skip_prompt: true,
+        skip_special_tokens: true,
+        callback_function: (chunk) => {
+          resultText += chunk;
+          tokenCount++;
+          post('token', { requestId, text: chunk });
+        },
+      });
 
     const imEndId = tokenizer.encode('<|im_end|>', { add_special_tokens: false }).at(-1);
     const stopping = typeof imEndId === 'number' ? [new EosStoppingCriteria(imEndId)] : undefined;
 
-    await model.generate({
-      ...inputs,
-      max_new_tokens: task.maxNewTokens || DEFAULT_MAX_NEW_TOKENS,
-      temperature: 0,
-      do_sample: false,
-      streamer,
-      stopping_criteria: stopping,
-    });
+    const generateOnce = (logitsProcessor) =>
+      model.generate({
+        ...inputs,
+        max_new_tokens: task.maxNewTokens || DEFAULT_MAX_NEW_TOKENS,
+        temperature: 0,
+        do_sample: false,
+        streamer: makeStreamer(),
+        stopping_criteria: stopping,
+        ...(logitsProcessor ? { logits_processor: [logitsProcessor] } : {}),
+      });
+
+    // 構造化抽出 (extract) だけ、JSON Schema でトークンを制約する。
+    // パッケージが読めない場合は制約なしで、生成に失敗した場合は
+    // 制約なしで 1 度だけ再試行する (実験的機能のため壊さない)。
+    let logitsProcessor = null;
+    const responseFormat = resolveResponseFormat(taskKey, fields);
+    if (responseFormat) {
+      try {
+        const structured = await loadStructuredOutput();
+        logitsProcessor = createStructuredProcessor(structured, tokenizer, responseFormat);
+        if (logitsProcessor) status('process', 'JSON 形式を強制して生成中…');
+      } catch (err) {
+        console.warn('構造化出力を初期化できませんでした:', err);
+        logitsProcessor = null;
+      }
+    }
+
+    try {
+      await generateOnce(logitsProcessor);
+    } catch (err) {
+      if (!logitsProcessor) throw err;
+      console.warn('構造化出力に失敗したため、制約なしで再試行します:', err);
+      resultText = '';
+      tokenCount = 0;
+      post('reset', { requestId });
+      await generateOnce(null);
+    }
 
     const elapsedMs =
       (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt;

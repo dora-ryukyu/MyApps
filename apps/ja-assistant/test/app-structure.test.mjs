@@ -94,6 +94,16 @@ test('worker.js は Transformers.js v4 の AutoModel でストリーミング生
   assert.ok(workerJs.includes('navigator.gpu'), 'WebGPU の存在確認が無い');
 });
 
+test('worker.js は構造化出力を extract タスクに配線し、失敗時は再試行する', () => {
+  assert.ok(workerJs.includes("from './structured-output.mjs'"));
+  assert.ok(workerJs.includes('STRUCTURED_OUTPUT_MODULE_URL'));
+  assert.ok(workerJs.includes('resolveResponseFormat'));
+  assert.ok(workerJs.includes('createStructuredProcessor'));
+  assert.ok(workerJs.includes('logits_processor'));
+  assert.ok(workerJs.includes("post('reset'"), '再試行時のリセット通知が無い');
+  assert.ok(pipelineJs.includes('parseJsonLoose'), 'フォールバックのパースが無い');
+});
+
 test('worker.js の postMessage 型は script.js 側で処理される', () => {
   const posted = new Set([...workerJs.matchAll(/post\(\s*'([a-z-]+)'/g)].map((m) => m[1]));
   for (const type of [
@@ -102,6 +112,7 @@ test('worker.js の postMessage 型は script.js 側で処理される', () => {
     'backend',
     'ready',
     'token',
+    'reset',
     'result',
     'error',
     'cache-cleared',

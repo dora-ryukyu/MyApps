@@ -18,7 +18,7 @@
    Transformers.js
    ========================================================== */
 
-export const TRANSFORMERS_VERSION = '4.2.0';
+export const TRANSFORMERS_VERSION = '4.3.0';
 export const TRANSFORMERS_MODULE_URL = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${TRANSFORMERS_VERSION}`;
 
 /** Transformers.js がモデルを保存する Cache Storage の既定プレフィックス */
