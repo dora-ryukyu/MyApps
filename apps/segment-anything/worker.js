@@ -233,30 +233,49 @@ async function generateMask({ points, boxes, referenceIndex }) {
   }
 
   const prompt = buildPrompt({ points, boxes, reshapedSize });
-  const feeds = {
-    ...imageEmbeddings,
-    input_points: new tf.Tensor('float32', toTensorData(prompt.inputPoints.data), prompt.inputPoints.dims),
-    input_labels: new tf.Tensor('int64', toTensorData(prompt.inputLabels.data, 'int64'), prompt.inputLabels.dims),
-  };
+  const pointTensor = prompt.inputPoints
+    ? {
+        input_points: new tf.Tensor('float32', toTensorData(prompt.inputPoints.data), prompt.inputPoints.dims),
+        input_labels: new tf.Tensor(
+          'int64',
+          toTensorData(prompt.inputLabels.data, 'int64'),
+          prompt.inputLabels.dims,
+        ),
+      }
+    : {};
 
   status('process', `セグメンテーション中… (${backend})`);
   const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-  // input_boxes を受け付ける実装なら使う。失敗したら点 (label 2/3) のみで再試行する。
+  // 第 1 候補: 点 + input_boxes。input_boxes 非対応なら点 (label 2/3) に落とす。
   let outputs = null;
   if (prompt.inputBoxes) {
     try {
-      const withBoxes = {
-        ...feeds,
+      outputs = await active.model({
+        ...imageEmbeddings,
+        ...pointTensor,
         input_boxes: new tf.Tensor('float32', toTensorData(prompt.inputBoxes.data), prompt.inputBoxes.dims),
-      };
-      outputs = await active.model(withBoxes);
+      });
     } catch (err) {
       console.warn('input_boxes 経路に失敗したため点プロンプトで再試行します:', err);
       outputs = null;
     }
   }
-  if (!outputs) outputs = await active.model(feeds);
+  if (!outputs) {
+    // フォールバック: ユーザーの点 + 矩形の 2 隅 (label 2/3) を input_points に載せる
+    const pointData = [...(prompt.inputPoints ? prompt.inputPoints.data : [])];
+    const labelData = [...(prompt.inputLabels ? prompt.inputLabels.data : [])];
+    if (prompt.cornerPoints) {
+      pointData.push(...prompt.cornerPoints.data);
+      labelData.push(...prompt.cornerLabels.data);
+    }
+    if (labelData.length === 0) throw new Error('プロンプトを構築できませんでした');
+    outputs = await active.model({
+      ...imageEmbeddings,
+      input_points: new tf.Tensor('float32', toTensorData(pointData), [1, 1, labelData.length, 2]),
+      input_labels: new tf.Tensor('int64', toTensorData(labelData, 'int64'), [1, 1, labelData.length]),
+    });
+  }
 
   const processed = await active.processor.post_process_masks(
     outputs.pred_masks,

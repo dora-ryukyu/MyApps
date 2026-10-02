@@ -296,14 +296,17 @@ export function boxesToCornerPoints(boxes, reshapedSize) {
 }
 
 /**
- * 点と矩形をまとめて Tensor 化できるデータに落とす。
+ * 点と矩形を Tensor 化できるデータに落とす。
  * 点も矩形も無ければ例外 (何を切り抜くか決まっていない)。
  *
- * `inputPoints` / `inputLabels` には、ユーザーの点に加えて矩形の 2 隅
- * (label 2/3) を連結したものを入れる。worker はこれを使う。
- * `inputBoxes` は `input_boxes` 入力をサポートする実装向けの補助表現。
+ * - `inputPoints` / `inputLabels`: ユーザーが置いた点のみ (矩形は含めない)
+ * - `inputBoxes`: 矩形を `input_boxes` 入力として渡すための表現 (推奨経路)
+ * - `cornerPoints` / `cornerLabels`: `input_boxes` が使えないモデル向けの
+ *   フォールバック表現。矩形を左上 label 2 / 右下 label 3 の 2 点にする
  *
- * @returns {{inputPoints:object,inputLabels:object,inputBoxes:object|null,pointCount:number,boxCount:number}}
+ * worker はまず `input_boxes` 経路を試し、失敗したら corner を点に混ぜて再試行する。
+ *
+ * @returns {{inputPoints:object|null,inputLabels:object|null,inputBoxes:object|null,cornerPoints:object|null,cornerLabels:object|null,pointCount:number,boxCount:number}}
  */
 export function buildPrompt({ points, boxes, reshapedSize } = {}) {
   const pointFlat = pointsToFlat(Array.isArray(points) ? points : [], reshapedSize);
@@ -311,19 +314,30 @@ export function buildPrompt({ points, boxes, reshapedSize } = {}) {
   if (!pointFlat && !cornerFlat) {
     throw new Error('点または矩形のプロンプトが必要です');
   }
-  const combined = {
-    data: [...(pointFlat ? pointFlat.data : []), ...(cornerFlat ? cornerFlat.data : [])],
-    labels: [...(pointFlat ? pointFlat.labels : []), ...(cornerFlat ? cornerFlat.labels : [])],
-  };
-  const n = combined.labels.length;
   const boxPrompt = buildBoxPrompt(Array.isArray(boxes) ? boxes : [], reshapedSize);
   return {
-    inputPoints: { data: combined.data, dims: [1, 1, n, 2] },
-    inputLabels: { data: combined.labels, dims: [1, 1, n] },
+    inputPoints: flatToPoints(pointFlat),
+    inputLabels: flatToLabels(pointFlat),
     inputBoxes: boxPrompt,
+    cornerPoints: flatToPoints(cornerFlat),
+    cornerLabels: flatToLabels(cornerFlat),
     pointCount: pointFlat ? pointFlat.labels.length : 0,
     boxCount: boxPrompt ? boxPrompt.dims[1] : 0,
   };
+}
+
+/** 平坦な点列を SAM の `input_points` 形状にする */
+function flatToPoints(flat) {
+  if (!flat) return null;
+  const n = flat.labels.length;
+  return { data: flat.data, dims: [1, 1, n, 2] };
+}
+
+/** 平坦なラベル列を SAM の `input_labels` 形状にする */
+function flatToLabels(flat) {
+  if (!flat) return null;
+  const n = flat.labels.length;
+  return { data: flat.labels, dims: [1, 1, n] };
 }
 
 /* ==========================================================

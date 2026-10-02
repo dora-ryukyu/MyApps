@@ -189,7 +189,7 @@ test('boxesToCornerPoints は矩形を label 2/3 の 2 点にする', () => {
   assert.equal(boxesToCornerPoints([], { width: 10, height: 10 }), null);
 });
 
-test('buildPrompt は点と矩形の 2 隅をまとめ、空なら例外', () => {
+test('buildPrompt は点と矩形を別表現でまとめ、空なら例外', () => {
   const pointOnly = buildPrompt({
     points: [{ x: 0.5, y: 0.5 }],
     reshapedSize: { width: 100, height: 100 },
@@ -197,6 +197,8 @@ test('buildPrompt は点と矩形の 2 隅をまとめ、空なら例外', () =>
   assert.equal(pointOnly.pointCount, 1);
   assert.equal(pointOnly.boxCount, 0);
   assert.deepEqual(pointOnly.inputLabels.data, [1]);
+  assert.equal(pointOnly.inputBoxes, null);
+  assert.equal(pointOnly.cornerPoints, null);
 
   const boxOnly = buildPrompt({
     boxes: [{ xmin: 0.1, ymin: 0.1, xmax: 0.4, ymax: 0.4 }],
@@ -204,16 +206,19 @@ test('buildPrompt は点と矩形の 2 隅をまとめ、空なら例外', () =>
   });
   assert.equal(boxOnly.pointCount, 0);
   assert.equal(boxOnly.boxCount, 1);
-  assert.deepEqual(boxOnly.inputPoints.data, [10, 10, 40, 40]);
-  assert.deepEqual(boxOnly.inputLabels.data, [2, 3]);
+  assert.equal(boxOnly.inputPoints, null, '矩形は input_points に混ぜない');
   assert.deepEqual(boxOnly.inputBoxes.data, [10, 10, 40, 40]);
+  assert.deepEqual(boxOnly.cornerPoints.data, [10, 10, 40, 40]);
+  assert.deepEqual(boxOnly.cornerLabels.data, [2, 3]);
 
   const combined = buildPrompt({
     points: [{ x: 0.5, y: 0.5 }],
     boxes: [{ xmin: 0.1, ymin: 0.1, xmax: 0.4, ymax: 0.4 }],
     reshapedSize: { width: 100, height: 100 },
   });
-  assert.equal(combined.inputLabels.dims[2], 3);
+  assert.equal(combined.inputLabels.dims[2], 1);
+  assert.equal(combined.cornerLabels.dims[2], 2);
+  assert.equal(combined.inputBoxes.dims[1], 1);
 
   assert.throws(() => buildPrompt({ reshapedSize: { width: 10, height: 10 } }), /プロンプト/);
 });
