@@ -3,6 +3,11 @@
  *
  * UI を担当し、モデルのダウンロードと推論は worker.js に投げる。
  * 「高速（350M）」と「高品質（1.2B）」を切り替えられる。
+ *
+ * さらに Chrome 138 stable の内蔵 AI API (Translator / LanguageDetector)
+ * が使えるときは「ブラウザ内蔵翻訳」を第一候補にする。モデルはブラウザが
+ * 管理するためアプリ側のダウンロードは不要。対応外ブラウザでは
+ * 従来どおり Transformers.js のローカルモデルを使う。
  */
 
 import {
@@ -17,6 +22,17 @@ import {
   DEBOUNCE_MS,
 } from './pipeline.mjs';
 
+import {
+  BUILTIN_BACKEND,
+  TRANSFORMERS_BACKEND,
+  AVAILABILITY,
+  normalizeAvailability,
+  isBuiltinUsable,
+  directionToLanguages,
+  detectDirection,
+  builtinTranslationInfo,
+} from '../../shared/builtin-ai.mjs';
+
 const $ = (id) => document.getElementById(id);
 
 /* Loading */
@@ -24,6 +40,8 @@ const $loadingScreen = $('loading-screen');
 const $consentState = $('consent-state');
 const $loadingState = $('loading-state');
 const $consentBtn = $('consent-btn');
+const $consentLead = $('consent-lead');
+const $builtinNote = $('builtin-note');
 const $loadingStatus = $('loading-status');
 const $loadingHint = $('loading-hint');
 const $progressFill = $('progress-fill');
@@ -71,6 +89,61 @@ let activeRequest = 0;
 let resultText = '';
 let queued = null; // 生成中に来た最新リクエスト (リアルタイム入力用)
 let hasWebGPU = typeof navigator !== 'undefined' && Boolean(navigator.gpu);
+
+/* Chrome 内蔵 AI API の状態 */
+let translatorApi = null;
+let languageDetectorApi = null;
+let builtinDetector = null;
+let builtinAvailability = AVAILABILITY.UNKNOWN;
+let builtinReady = false;
+let activeBackend = TRANSFORMERS_BACKEND;
+const builtinTranslators = new Map(); // direction -> Translator
+
+/* ==========================================================
+   内蔵 AI API の feature detect
+   ========================================================== */
+function detectBuiltinApis() {
+  translatorApi = typeof globalThis.Translator !== 'undefined' ? globalThis.Translator : null;
+  languageDetectorApi =
+    typeof globalThis.LanguageDetector !== 'undefined' ? globalThis.LanguageDetector : null;
+}
+
+/**
+ * 現在の翻訳方向について内蔵翻訳が使えるかを問い合わせ、モデル選択へ反映する。
+ * 失敗しても既存の Transformers.js 経路はそのまま使えるようにする。
+ */
+async function refreshBuiltinAvailability() {
+  if (!translatorApi || typeof translatorApi.availability !== 'function') {
+    builtinAvailability = AVAILABILITY.UNKNOWN;
+    syncBuiltinOption();
+    return;
+  }
+  try {
+    const value = await translatorApi.availability(directionToLanguages(direction));
+    builtinAvailability = normalizeAvailability(value);
+  } catch (error) {
+    console.warn('Translator.availability failed:', error);
+    builtinAvailability = AVAILABILITY.UNKNOWN;
+  }
+  syncBuiltinOption();
+}
+
+/** 使えるときだけモデル選択の先頭に「ブラウザ内蔵翻訳」を足す */
+function syncBuiltinOption() {
+  const usable = isBuiltinUsable(builtinAvailability);
+  const existing = $modeSelect.querySelector(`option[value="${BUILTIN_BACKEND}"]`);
+  if (usable && !existing) {
+    const option = document.createElement('option');
+    option.value = BUILTIN_BACKEND;
+    option.textContent = 'ブラウザ内蔵翻訳 — モデルのダウンロード不要';
+    $modeSelect.prepend(option);
+    if (!appReady) $modeSelect.value = BUILTIN_BACKEND;
+  } else if (!usable && existing) {
+    if ($modeSelect.value === existing.value) $modeSelect.value = DEFAULT_MODE;
+    existing.remove();
+  }
+  updateConsentInfo();
+}
 
 /* ==========================================================
    起動
@@ -127,6 +200,141 @@ function requestModelLoad() {
   updateTranslateEnabled();
   if (appReady) setStatus('モデルを切り替え中…');
   worker.postMessage({ type: 'load', modeKey: $modeSelect.value });
+}
+
+/* ==========================================================
+   ブラウザ内蔵翻訳 (Chrome 138+)
+   ========================================================== */
+
+/**
+ * 指定方向の Translator を取得する。初回は downloadprogress を拾って
+ * ローディング表示に反映する。生成済みならキャッシュを返す。
+ */
+async function ensureBuiltinTranslator(dir) {
+  if (builtinTranslators.has(dir)) return builtinTranslators.get(dir);
+  if (!translatorApi) throw new Error('このブラウザは内蔵翻訳に対応していません');
+
+  const translator = await translatorApi.create({
+    ...directionToLanguages(dir),
+    monitor(m) {
+      m.addEventListener('downloadprogress', (event) => {
+        const loaded = Number(event.loaded) || 0;
+        const total = Number(event.total) || 0;
+        if (appReady) return;
+        $loadingStatus.textContent = 'ブラウザ内蔵翻訳モデルを取得中…';
+        if (total > 0) {
+          $progressFill.style.width = `${Math.min(99, Math.round((loaded / total) * 100))}%`;
+          $loadingHint.textContent = `${formatBytes(loaded)} / ${formatBytes(total)}`;
+        }
+      });
+    },
+  });
+  builtinTranslators.set(dir, translator);
+  return translator;
+}
+
+/** 同意ボタンから内蔵翻訳を開始する (ユーザー操作の中で create する) */
+async function startBuiltin() {
+  activeBackend = BUILTIN_BACKEND;
+  $loadingStatus.textContent = 'ブラウザ内蔵翻訳を準備しています…';
+  $loadingHint.textContent = '初回のみ Chrome がモデルを取得する場合があります';
+  try {
+    await ensureBuiltinTranslator(direction);
+    // LanguageDetector もここで作っておく (入力言語の自動判定用)
+    if (languageDetectorApi && !builtinDetector) {
+      try {
+        builtinDetector = await languageDetectorApi.create();
+      } catch (detectorError) {
+        console.warn('LanguageDetector.create failed:', detectorError);
+      }
+    }
+    modelReady = true;
+    builtinReady = true;
+    appReady = true;
+    $loadingHint.textContent = '準備完了';
+    $progressFill.style.width = '100%';
+    updateBuiltinBadge();
+    updateTranslateEnabled();
+    showApp();
+  } catch (error) {
+    console.error('builtin translator create failed:', error);
+    showError(`ブラウザ内蔵翻訳を開始できませんでした: ${error?.message || error}`);
+    $modeSelect.value = DEFAULT_MODE;
+    resetConsent('再試行する');
+    updateConsentInfo();
+  }
+}
+
+/** 入力テキストの言語を検出し、対応言語なら翻訳方向を返す */
+async function detectLanguageDirection(text, fallback) {
+  if (!languageDetectorApi) return fallback;
+  try {
+    if (!builtinDetector) {
+      const availability =
+        typeof languageDetectorApi.availability === 'function'
+          ? await languageDetectorApi.availability()
+          : AVAILABILITY.AVAILABLE;
+      if (!isBuiltinUsable(availability)) return fallback;
+      builtinDetector = await languageDetectorApi.create();
+    }
+    const results = await builtinDetector.detect(text);
+    return detectDirection(results, fallback);
+  } catch (error) {
+    console.warn('language detection failed:', error);
+    return fallback;
+  }
+}
+
+/** 内蔵翻訳で 1 件翻訳する (ストリーミング無し) */
+async function runBuiltinTranslation({ text, direction: dir }) {
+  generating = true;
+  resultText = '';
+  const requestId = ++requestSeq;
+  activeRequest = requestId;
+  updateTranslateEnabled();
+  $outputText.innerHTML = '<span class="streaming-cursor"></span>';
+  $copyBtn.style.display = 'none';
+  $metricsBar.style.display = 'none';
+
+  try {
+    // 入力言語を自動判定し、対応言語なら翻訳方向を切り替える
+    const detected = await detectLanguageDirection(text, dir);
+    const targetDir = detected || dir;
+    if (targetDir !== direction) {
+      direction = targetDir;
+      updateDirection();
+    }
+    const translator = await ensureBuiltinTranslator(targetDir);
+    const output = await translator.translate(text);
+    if (requestId !== activeRequest) return;
+
+    const clean = cleanTranslation(output);
+    generating = false;
+    $outputText.textContent = clean || '(出力なし)';
+    if (clean) $copyBtn.style.display = 'flex';
+    updateStreamingCursor();
+    updateBuiltinBadge();
+    updateTranslateEnabled();
+
+    if (queued) {
+      const next = queued;
+      queued = null;
+      runTranslation(next);
+    }
+  } catch (error) {
+    if (requestId !== activeRequest) return;
+    console.error('builtin translation failed:', error);
+    generating = false;
+    updateStreamingCursor();
+    updateTranslateEnabled();
+    showError(`翻訳エラー: ${error?.message || error}`);
+    setStatus('翻訳に失敗しました');
+  }
+}
+
+function updateBuiltinBadge() {
+  $backendBadge.textContent = 'バックエンド: ブラウザ内蔵翻訳 (Chrome)';
+  $backendBadge.classList.remove('badge-warning');
 }
 
 /* ==========================================================
@@ -253,7 +461,12 @@ function translate() {
 }
 
 function runTranslation({ text, direction: dir }) {
-  if (!modelReady || !worker) return;
+  if (!modelReady) return;
+  if (activeBackend === BUILTIN_BACKEND) {
+    runBuiltinTranslation({ text, direction: dir });
+    return;
+  }
+  if (!worker) return;
   generating = true;
   resultText = '';
   activeRequest = ++requestSeq;
@@ -378,9 +591,22 @@ function populateModeSelect() {
 }
 
 function updateConsentInfo() {
+  const isBuiltin = $modeSelect.value === BUILTIN_BACKEND;
+  if (isBuiltin) {
+    const info = builtinTranslationInfo(builtinAvailability) || builtinTranslationInfo('downloadable');
+    $consentLead.style.display = 'none';
+    if ($builtinNote) $builtinNote.style.display = 'block';
+    $modelSize.textContent = '0';
+    $modelLicense.textContent = `使用モデル: ${info.modelLabel} / ライセンス: ブラウザ提供`;
+    $consentBtn.textContent = info.button;
+    return;
+  }
   const choice = chooseModel($modeSelect.value, hasWebGPU);
+  $consentLead.style.display = 'block';
+  if ($builtinNote) $builtinNote.style.display = 'none';
   $modelSize.textContent = formatBytes(estimateModelBytes(choice.modeKey, choice.device));
   $modelLicense.textContent = `使用モデル: ${choice.shortLabel} / ライセンス: ${choice.license}`;
+  $consentBtn.textContent = 'モデルをダウンロードして開始';
 }
 
 function setupInteractions() {
@@ -456,7 +682,40 @@ function setupInteractions() {
 
   $modeSelect.addEventListener('change', () => {
     updateConsentInfo();
+    if ($modeSelect.value === BUILTIN_BACKEND) {
+      activeBackend = BUILTIN_BACKEND;
+      if (builtinReady) {
+        modelReady = true;
+        if (appReady) {
+          setStatus('ブラウザ内蔵翻訳に切り替えました');
+          updateBuiltinBadge();
+          updateTranslateEnabled();
+        }
+        return;
+      }
+      // 初めて内蔵翻訳を選んだ場合はここで準備する (change もユーザー操作)
+      modelReady = false;
+      updateTranslateEnabled();
+      setStatus('ブラウザ内蔵翻訳を準備しています…');
+      ensureBuiltinTranslator(direction)
+        .then(() => {
+          builtinReady = true;
+          modelReady = true;
+          updateBuiltinBadge();
+          updateTranslateEnabled();
+          setStatus('ブラウザ内蔵翻訳に切り替えました');
+        })
+        .catch((error) => {
+          console.error('builtin translator create failed:', error);
+          showError(`ブラウザ内蔵翻訳を準備できませんでした: ${error?.message || error}`);
+          $modeSelect.value = DEFAULT_MODE;
+          updateConsentInfo();
+        });
+      return;
+    }
+    activeBackend = TRANSFORMERS_BACKEND;
     if (!appReady) return;
+    if (!worker) setupWorker();
     requestModelLoad();
   });
 
@@ -485,19 +744,25 @@ function setupInteractions() {
 /* ==========================================================
    起動
    ========================================================== */
+detectBuiltinApis();
 populateModeSelect();
 updateConsentInfo();
+// 内蔵翻訳が使えるなら選択肢の先頭に足す (対応外なら何もしない)
+refreshBuiltinAvailability();
 
 $consentBtn.addEventListener('click', () => {
   clearError();
   $consentBtn.disabled = true;
   $consentState.style.display = 'none';
   $loadingState.style.display = 'block';
-  $loadingHint.textContent = '初回はモデルのダウンロードに時間がかかります';
-  if (!worker) {
-    setupWorker();
-    requestModelLoad();
+  if ($modeSelect.value === BUILTIN_BACKEND) {
+    startBuiltin();
+    return;
   }
+  activeBackend = TRANSFORMERS_BACKEND;
+  $loadingHint.textContent = '初回はモデルのダウンロードに時間がかかります';
+  if (!worker) setupWorker();
+  requestModelLoad();
 });
 
 setupInteractions();

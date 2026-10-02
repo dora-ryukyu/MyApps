@@ -32,9 +32,13 @@
                     </svg>
                 </div>
                 <h2 class="loading-title">ローカル翻訳</h2>
-                <p class="loading-subtitle">
+                <p class="loading-subtitle" id="consent-lead">
                     初回利用時はAI翻訳モデル（約 <span id="model-size">-</span>）のダウンロードが必要です。<br>
                     ダウンロード後はブラウザにキャッシュされ、<strong>すべての処理がローカルで完結</strong>します。
+                </p>
+                <p class="loading-subtitle" id="builtin-note" style="display:none;">
+                    Chrome 内蔵の翻訳をそのまま使います。<strong>モデルのダウンロードは不要</strong>です。<br>
+                    処理はブラウザ内で完結し、データは送信されません。
                 </p>
                 <p class="loading-subtitle" id="model-license">使用モデル: - / ライセンス: -</p>
                 <button id="consent-btn" class="btn-consent">
@@ -203,12 +207,20 @@
                 <section class="about-section">
                     <h4>Models</h4>
                     <p>
+                        <strong>ブラウザ内蔵翻訳</strong> — Chrome 138 以降のデスクトップ Chrome に内蔵された
+                        Translator API。モデルはブラウザが管理するため、アプリ側のダウンロードはありません
+                        (対応ブラウザのみ選択肢に表示されます)。<br>
                         <strong>高速（350M）</strong> — LFM2-350M-ENJP-MT。日英翻訳に特化した軽量モデル。<br>
                         <strong>高品質（1.2B）</strong> — LFM2.5-1.2B-JP。日本語と英語に対応した汎用モデルで、
                         文脈を踏まえた訳になる代わりに、ダウンロードと推論が重くなります。
                         どちらも Liquid AI の LFM2 系で、Attention と Convolution を組み合わせた
                         ハイブリッドアーキテクチャです。
                     </p>
+                </section>
+                <section class="about-section">
+                    <h4>Language Detection</h4>
+                    <p>内蔵翻訳を使うときは <strong>LanguageDetector API</strong> で入力言語を自動判定し、
+                        日本語なら英語へ、英語なら日本語へ翻訳方向を切り替えます。</p>
                 </section>
                 <section class="about-section">
                     <h4>Privacy &amp; Security</h4>
