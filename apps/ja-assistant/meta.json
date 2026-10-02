@@ -1,0 +1,8 @@
+{
+  "id": "ja-assistant",
+  "name": "日本語アシスタント",
+  "description": "LFM2.5-1.2B-JP をブラウザ内で実行。日本語の要約・Q&A・構造化抽出がオフラインで動きます。",
+  "icon": "sparkles",
+  "color": "#0d9488",
+  "tags": ["AI", "日本語", "LLM", "要約", "オフライン"]
+}

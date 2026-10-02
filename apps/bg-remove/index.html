@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>背景除去 — Background Remover</title>
+  <meta name="description" content="画像から背景を消して透過 PNG に。MODNet / RMBG-1.4 を WebGPU・WASM でブラウザ内実行し、画像は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="../../shared/loader.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <!-- ローディング・同意画面 -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div id="consent-state">
+        <div class="loading-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+        </div>
+        <h2 class="loading-title">背景除去</h2>
+        <p class="loading-subtitle">
+          初回利用時はモデル（約 <span id="model-size">25 MiB</span>）のダウンロードが必要です。<br>
+          推論はあなたの端末上で完結し、画像が外部に送信されることはありません。
+        </p>
+        <p class="loading-subtitle" id="model-license">使用モデル: MODNet（人物向け） / ライセンス: Apache-2.0</p>
+        <button id="consent-btn" class="btn-consent">モデルをダウンロードして開始</button>
+      </div>
+
+      <div id="loading-state" style="display: none;">
+        <div class="loading-icon">
+          <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        </div>
+        <h2 class="loading-title">AI を準備中…</h2>
+        <p class="loading-subtitle" id="loading-status">モデルの初期化中…</p>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+        </div>
+        <p class="loading-hint" id="loading-hint">しばらくお待ちください</p>
+      </div>
+    </div>
+  </div>
+
+  <main class="app-container" id="app-main" style="display: none;">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">背景除去</h1>
+        <p class="app-subtitle">MODNet / RMBG-1.4 をブラウザ内実行。画像の背景を消して透過 PNG にします。</p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" style="display: none;"></div>
+
+    <div class="layout-grid">
+      <!-- 左: 入力 -->
+      <section class="panel card">
+        <h2 class="panel-title">画像</h2>
+
+        <div id="image-drop" class="drop-zone">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p class="drop-title">ここに画像をドロップ</p>
+          <p class="drop-hint">または下のボタンで選択（PNG / JPEG / WebP / GIF / BMP / AVIF）</p>
+          <label class="btn btn-ghost file-label" for="file-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            <span>画像を選択</span>
+          </label>
+          <input id="file-input" type="file" accept="image/*" hidden />
+        </div>
+
+        <div class="source-preview-wrap">
+          <img id="source-preview" class="source-preview" alt="入力画像のプレビュー" />
+        </div>
+        <p id="source-name" class="file-name"></p>
+
+        <div class="field-row">
+          <label class="field-label" for="subject-select">被写体</label>
+          <select id="subject-select" class="select-input"></select>
+          <p id="license-note" class="license-note" style="display: none;"></p>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="bg-mode">背景</label>
+          <select id="bg-mode" class="select-input"></select>
+        </div>
+
+        <div id="bg-color-row" class="field-row field-inline">
+          <label class="field-label" for="bg-color">背景色</label>
+          <input id="bg-color" class="color-input" type="color" value="#ffffff" />
+        </div>
+
+        <div id="bg-image-row" class="field-row field-inline">
+          <label class="field-label" for="bg-image-input">背景画像</label>
+          <label class="btn btn-ghost file-label" for="bg-image-input">
+            <span>画像を選択</span>
+          </label>
+          <input id="bg-image-input" type="file" accept="image/*" hidden />
+          <span id="bg-image-name" class="file-name"></span>
+        </div>
+
+        <div class="action-row">
+          <button id="process-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+            <span>背景を除去する</span>
+          </button>
+          <button id="clear-btn" class="btn btn-ghost" type="button">クリア</button>
+        </div>
+
+        <div class="meta-row">
+          <span id="backend-badge" class="badge">バックエンド: 準備中</span>
+          <span id="model-badge" class="badge">モデル: -</span>
+          <span id="time-badge" class="badge">-</span>
+        </div>
+        <p id="status-text" class="status-text">モデルの準備を待っています…</p>
+      </section>
+
+      <!-- 右: 結果 -->
+      <section class="panel card output-panel">
+        <h2 class="panel-title">結果</h2>
+        <div class="result-stage">
+          <div id="result-empty" class="output-placeholder">ここに背景を除去した画像が表示されます</div>
+          <canvas id="result-canvas" class="result-canvas" style="display: none;"></canvas>
+        </div>
+        <div class="action-row">
+          <button id="download-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>PNG をダウンロード</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>背景除去について</h2>
+      <p>
+        画像から被写体を切り抜き、背景を透明にした PNG を作ります。任意の単色または画像背景に
+        合成して書き出すこともできます。モデルのダウンロードと推論はすべてブラウザ内で行われ、
+        画像がサーバーへ送信されることはありません。
+      </p>
+      <h3>使用モデル</h3>
+      <ul>
+        <li><strong>Xenova/modnet</strong>（Apache 2.0）— 人物向けの軽量マッティング。</li>
+        <li><strong>briaai/RMBG-1.4</strong>（bria-rmbg-1.4・<strong>非商用</strong>）— 人物以外の汎用セグメンテーション。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>Transformers.js の <code>background-removal</code> パイプラインでアルファマスクを推定</li>
+        <li>WebGPU が使えれば WebGPU で、無ければ WASM に自動フォールバック</li>
+        <li>透過 PNG、または選んだ背景に合成して出力</li>
+      </ol>
+      <h3>保存とプライバシー</h3>
+      <p>
+        モデルはブラウザの Cache Storage（<code>transformers-cache</code>）に保存され、
+        2 回目以降は再ダウンロードされません。画像は端末内でのみ処理されます。
+      </p>
+      <button id="clear-cache-btn" class="btn btn-danger" type="button">モデルキャッシュを削除</button>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="背景除去"
+    data-app-icon="eraser"
+    data-app-color="#db2777"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>

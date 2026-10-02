@@ -1,0 +1,8 @@
+{
+  "id": "upscale-studio",
+  "name": "アップスケール",
+  "description": "画像を 2x / 4x に高解像度化。Swin2SR / Real-ESRGAN を WebGPU・WASM でブラウザ内実行し、画像は送信しません。",
+  "icon": "expand",
+  "color": "#7c3aed",
+  "tags": ["AI", "画像", "超解像", "アップスケール", "WebGPU"]
+}

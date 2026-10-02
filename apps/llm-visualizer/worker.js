@@ -1,4 +1,4 @@
-import { AutoTokenizer, AutoModelForCausalLM, env, Tensor, DynamicCache } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0';
+import { AutoTokenizer, AutoModelForCausalLM, env, Tensor, DynamicCache } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0';
 
 // WebGPUの有効化
 env.allowLocalModels = false;
