@@ -1,0 +1,8 @@
+{
+  "id": "segment-anything",
+  "name": "物体切り抜き",
+  "description": "画像の任意の物体を点や矩形で指定して画素単位に切り抜く。SlimSAM を WebGPU・WASM でブラウザ内実行し、画像は送信しません。",
+  "icon": "lasso",
+  "color": "#7c3aed",
+  "tags": ["AI", "画像", "セグメンテーション", "SAM", "WebGPU"]
+}
