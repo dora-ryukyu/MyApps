@@ -1505,19 +1505,55 @@
   function loadImageFromFile(file) {
     const reader = new FileReader();
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        state.image = img;
-        state.original = { w: img.width, h: img.height };
-        state.previewScale = getPreviewScale();
-        state.zoom = 'fit';
-        resetAllEdits();
-        updatePerspectivePreview();
-        scheduleRender();
-      };
-      img.src = reader.result;
+      loadImageFromDataUrl(reader.result);
     };
     reader.readAsDataURL(file);
+  }
+
+  /** data URL から画像を読み込んで編集対象にする */
+  function loadImageFromDataUrl(dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      state.image = img;
+      state.original = { w: img.width, h: img.height };
+      state.previewScale = getPreviewScale();
+      state.zoom = 'fit';
+      resetAllEdits();
+      updatePerspectivePreview();
+      scheduleRender();
+    };
+    img.src = dataUrl;
+  }
+
+  /**
+   * segment-anything からの受け渡し (切り抜き画像) を読み込む。
+   * キー文字列は apps/segment-anything/pipeline.mjs の SEGMENT_HANDOFF_KEY と一致させること。
+   * マスクは同じ handoff の maskDataUrl に載っている。
+   */
+  function consumeSegmentHandoff() {
+    let raw = null;
+    try {
+      raw = sessionStorage.getItem('myapps:segment-handoff');
+      if (raw) sessionStorage.removeItem('myapps:segment-handoff');
+    } catch {
+      return false;
+    }
+    if (!raw) return false;
+    let handoff = null;
+    try {
+      handoff = JSON.parse(raw);
+    } catch {
+      return false;
+    }
+    if (
+      !handoff ||
+      typeof handoff.cutoutDataUrl !== 'string' ||
+      !handoff.cutoutDataUrl.startsWith('data:image/')
+    ) {
+      return false;
+    }
+    loadImageFromDataUrl(handoff.cutoutDataUrl);
+    return true;
   }
 
   function loadSampleImage() {
@@ -1882,4 +1918,5 @@
   setTool('geometry');
   setEmptyState(true);
   updatePerspectivePreview();
+  consumeSegmentHandoff();
 })();
