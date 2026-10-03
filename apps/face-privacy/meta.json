@@ -1,0 +1,8 @@
+{
+  "id": "face-privacy",
+  "name": "顔の匿名化",
+  "description": "写真から顔を自動検出し、ぼかし・モザイク・黒塗り・絵文字で匿名化。MediaPipe をブラウザ内実行し、画像は送信しません。",
+  "icon": "scan-face",
+  "color": "#dc2626",
+  "tags": ["AI", "画像", "プライバシー", "顔検出", "MediaPipe"]
+}

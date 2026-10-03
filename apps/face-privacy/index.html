@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>顔の匿名化 — Face Privacy</title>
+  <meta name="description" content="写真から顔を自動検出し、ぼかし・モザイク・黒塗り・絵文字で匿名化。MediaPipe をブラウザ内実行し、画像は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="../../shared/loader.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+
+  <!-- 一括保存 (ZIP) 用。audio-converter と同じ依存 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+  <!-- ローディング・同意画面 -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+      <div id="consent-state">
+        <div class="loading-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+        </div>
+        <h2 class="loading-title">顔の匿名化</h2>
+        <p class="loading-subtitle">
+          初回利用時は顔検出モデルとランタイム（合計 約 <span id="model-size">-</span>）のダウンロードが必要です。<br>
+          検出と加工はあなたの端末上で完結し、画像が外部に送信されることはありません。
+        </p>
+        <p class="loading-subtitle" id="model-license">使用モデル: - / ライセンス: -</p>
+        <button id="consent-btn" class="btn-consent">モデルをダウンロードして開始</button>
+      </div>
+
+      <div id="loading-state" style="display: none;">
+        <div class="loading-icon">
+          <svg class="spin" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        </div>
+        <h2 class="loading-title">AI を準備中…</h2>
+        <p class="loading-subtitle" id="loading-status">モデルの初期化中…</p>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+        </div>
+        <p class="loading-hint" id="loading-hint">しばらくお待ちください</p>
+      </div>
+    </div>
+  </div>
+
+  <main class="app-container" id="app-main" style="display: none;">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">顔の匿名化</h1>
+        <p class="app-subtitle">顔を自動検出し、ぼかし・モザイク・黒塗り・絵文字で隠します。複数枚をまとめて処理できます。</p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" style="display: none;"></div>
+
+    <div class="layout-grid">
+      <!-- 左: 画像と設定 -->
+      <section class="panel card">
+        <h2 class="panel-title">画像と設定</h2>
+
+        <div id="image-drop" class="drop-zone">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          <p class="drop-title">ここに画像をドロップ（複数可）</p>
+          <p class="drop-hint">または下のボタンで選択（PNG / JPEG / WebP / GIF / BMP / AVIF）</p>
+          <label class="btn btn-ghost file-label" for="file-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            <span>画像を選択</span>
+          </label>
+          <input id="file-input" type="file" accept="image/*" multiple hidden />
+        </div>
+
+        <div class="gallery-wrap">
+          <div id="image-list" class="image-list"></div>
+          <p id="image-empty" class="output-placeholder">画像を追加するとここに並びます</p>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="mode-select">匿名化の方法</label>
+          <select id="mode-select" class="select-input"></select>
+          <p class="field-note" id="mode-note">矩形全体をぼかして輪郭を消します。</p>
+        </div>
+
+        <div class="field-row" id="emoji-row" style="display: none;">
+          <label class="field-label" for="emoji-select">重ねる絵文字</label>
+          <select id="emoji-select" class="select-input"></select>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="margin-input">拡張マージン: <span id="margin-value">-</span></label>
+          <input id="margin-input" class="range-input" type="range" min="0" max="1" step="0.05" value="0.25" />
+          <p class="field-note">検出矩形の外側をどれだけ広く隠すか。小さな検出漏れを吸収します。</p>
+        </div>
+
+        <div class="field-row" id="strength-row">
+          <label class="field-label" for="strength-input">強度: <span id="strength-value">-</span></label>
+          <input id="strength-input" class="range-input" type="range" min="0.1" max="1" step="0.05" value="0.6" />
+          <p class="field-note" id="strength-note">ぼかし半径 / モザイクのブロック密度を調整します。</p>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="confidence-input">検出の信頼度: <span id="confidence-value">-</span></label>
+          <input id="confidence-input" class="range-input" type="range" min="0.1" max="0.9" step="0.05" value="0.5" />
+          <p class="field-note">低いほど多くの顔を拾い、高いほど確実なものだけを残します。</p>
+        </div>
+
+        <label class="check-row" for="merge-input">
+          <input id="merge-input" type="checkbox" />
+          <span>重なった矩形を 1 つに統合する</span>
+        </label>
+
+        <div class="action-row">
+          <button id="detect-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+            <span>顔を検出</span>
+          </button>
+          <button id="detect-all-btn" class="btn btn-ghost" type="button" disabled>すべて検出</button>
+        </div>
+
+        <div class="action-row">
+          <button id="add-box-btn" class="btn btn-ghost" type="button" disabled>矩形を手動で追加</button>
+          <button id="clear-detections-btn" class="btn btn-ghost" type="button" disabled>矩形を消す</button>
+        </div>
+
+        <p id="source-name" class="file-name"></p>
+
+        <div id="detect-progress" class="progress-track process-progress" style="display: none;">
+          <div class="progress-fill" id="detect-progress-fill" style="width: 40%;"></div>
+        </div>
+
+        <div class="meta-row">
+          <span id="backend-badge" class="badge">実行: 準備中</span>
+          <span id="model-badge" class="badge">モデル: -</span>
+          <span id="count-badge" class="badge">検出: -</span>
+          <span id="time-badge" class="badge">-</span>
+        </div>
+        <p id="status-text" class="status-text">モデルの準備を待っています…</p>
+      </section>
+
+      <!-- 右: 結果 -->
+      <section class="panel card output-panel">
+        <h2 class="panel-title">結果</h2>
+
+        <div class="view-toggle">
+          <button id="show-preview-btn" class="mode-btn" type="button">検出結果</button>
+          <button id="show-result-btn" class="mode-btn" type="button">匿名化プレビュー</button>
+        </div>
+
+        <p id="result-empty" class="output-placeholder">画像を追加するとここに表示されます</p>
+
+        <div class="canvas-stage">
+          <canvas id="preview-canvas" class="result-canvas"></canvas>
+          <canvas id="result-canvas" class="result-canvas" style="display: none;"></canvas>
+        </div>
+
+        <div class="detection-panel">
+          <p id="selection-summary" class="field-note">矩形はまだありません</p>
+          <div id="detection-list" class="detection-list"></div>
+          <p id="detection-empty" class="output-placeholder">顔を検出するか、矩形を手動で追加してください</p>
+        </div>
+
+        <div class="action-row">
+          <button id="download-btn" class="btn btn-primary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>この画像を保存</span>
+          </button>
+          <button id="download-all-btn" class="btn btn-ghost" type="button" disabled>すべて保存 (ZIP)</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>顔の匿名化について</h2>
+      <p>
+        写真の中の顔を自動で見つけ、矩形をぼかし・モザイク・黒塗り・絵文字で隠します。
+        検出と加工はすべてブラウザ内で行われ、画像がサーバーへ送信されることはありません。
+      </p>
+      <h3>使用モデル</h3>
+      <ul>
+        <li><strong>BlazeFace short-range（MediaPipe）</strong>（Apache-2.0）— 顔の矩形と 6 キーポイントを返す軽量モデル。約 224 KiB。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>画像をブラウザ内でデコードし、顔検出モデルに渡す</li>
+        <li>顔ごとの矩形を得て、拡張マージンを足して匿名化領域を作る</li>
+        <li>重なりを統合し、ぼかし・モザイク・黒塗り・絵文字を適用する</li>
+        <li>WebGL2 が使えれば GPU、無ければ CPU (WASM) に自動フォールバック</li>
+        <li>検出漏れは矩形を手動で追加・調整できる</li>
+      </ol>
+      <h3>できないこと</h3>
+      <p>
+        横顔・マスク・非常に小さい顔は検出漏れすることがあります。動画には対応していません (静止画のみ)。
+        横顔などは手動で矩形を追加してください。
+      </p>
+      <h3>保存とプライバシー</h3>
+      <p>
+        顔検出モデルはブラウザの Cache Storage（<code>face-privacy-cache</code>）に保存され、
+        2 回目以降は再ダウンロードされません。画像は端末内でのみ処理されます。
+      </p>
+      <button id="clear-cache-btn" class="btn btn-danger" type="button">モデルキャッシュを削除</button>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="顔の匿名化"
+    data-app-icon="scan-face"
+    data-app-color="#dc2626"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
