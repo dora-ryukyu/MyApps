@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>写真メタデータ — MyApps</title>
+  <meta
+    name="description"
+    content="写真に埋め込まれた撮影日時・カメラ・GPS をブラウザ内で確認し、項目ごとに選んで削除して再書き出しするローカルツール。画像は送信しません。"
+  />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+
+  <!-- EXIF の読み取り (exifr, MIT) と書き込み/削除 (piexifjs, MIT) -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
+</head>
+<body>
+  <main class="app-main">
+    <!-- 入力 -->
+    <section class="card input-section">
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="写真を選択">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+        </svg>
+        <p class="drop-title">写真をドラッグ＆ドロップ、またはクリックして選択</p>
+        <p class="drop-hint">JPEG / PNG / HEIC / TIFF / WebP を読み取り。書き出しは JPEG / PNG に対応。複数選択できます。</p>
+        <input type="file" id="file-input" accept="image/jpeg,image/png,image/heic,image/heif,image/tiff,image/webp" multiple hidden />
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- 削除プラン -->
+    <section class="card plan-section">
+      <div class="section-head">
+        <h2 class="section-title">残す情報を選ぶ</h2>
+        <div class="preset-row" id="preset-row">
+          <button class="btn btn-small" type="button" data-preset="keep-all">すべて保持</button>
+          <button class="btn btn-small" type="button" data-preset="remove-gps">GPS だけ消す</button>
+          <button class="btn btn-small" type="button" data-preset="keep-datetime">撮影日時だけ残す</button>
+          <button class="btn btn-small btn-danger" type="button" data-preset="remove-all">すべて消す</button>
+        </div>
+      </div>
+      <p class="plan-note">
+        チェックを外した項目は書き出し時に削除します。JPEG は項目ごとに選べます。PNG は eXIf を丸ごと扱うため、1 つでも外すとメタデータ全体を削除します。
+      </p>
+      <div class="category-grid" id="category-grid"></div>
+      <p class="plan-summary" id="plan-summary"></p>
+    </section>
+
+    <!-- 一括操作 -->
+    <section class="card action-section">
+      <div class="action-row">
+        <button id="process-btn" class="btn btn-primary" type="button" disabled>選択した項目を削除して書き出す</button>
+        <button id="clear-btn" class="btn" type="button" disabled>クリア</button>
+      </div>
+      <div class="export-row">
+        <button id="export-csv-btn" class="btn btn-small" type="button" disabled>結果を CSV</button>
+        <button id="export-json-btn" class="btn btn-small" type="button" disabled>結果を JSON</button>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section class="card result-section">
+      <h2 class="section-title">結果</h2>
+      <div id="empty-state" class="empty-state">
+        <p>まだ写真が選ばれていません。</p>
+        <p class="empty-hint">写真を選ぶと、埋め込まれた情報がここに表示されます。</p>
+      </div>
+      <div id="file-list" class="file-list" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script
+    src="../../shared/header.js"
+    data-app-name="写真メタデータ"
+    data-app-icon="scan-eye"
+    data-app-color="#0f766e"
+  ></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
