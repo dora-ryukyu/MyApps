@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>暗号化ボルト — MyApps</title>
+  <meta name="description" content="ファイルやメモを age 形式で暗号化・復号。パスフレーズ式と鍵ペア式に対応し、処理はブラウザ内で完結します。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">暗号化ボルト</h1>
+        <p class="app-subtitle">
+          ファイルやメモを <strong>age</strong> 形式で暗号化・復号します。パスフレーズ式と鍵ペア式の両方に対応し、
+          処理はすべて端末内で完結します。生成した暗号文は <code>age</code> CLI や sops と同じ形式です。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- モード切替 -->
+    <div class="mode-tabs" role="tablist" aria-label="操作モード">
+      <button id="tab-encrypt" class="mode-tab is-active" type="button" role="tab" aria-selected="true" data-mode="encrypt">暗号化する</button>
+      <button id="tab-decrypt" class="mode-tab" type="button" role="tab" aria-selected="false" data-mode="decrypt">復号する</button>
+    </div>
+
+    <!-- ============ 暗号化 ============ -->
+    <section id="encrypt-section" class="panel card">
+      <h2 class="panel-title">暗号化</h2>
+
+      <div class="key-mode" role="radiogroup" aria-label="暗号化方式">
+        <label class="radio-field">
+          <input type="radio" name="enc-mode" value="passphrase" checked />
+          <span>パスフレーズで暗号化</span>
+        </label>
+        <label class="radio-field">
+          <input type="radio" name="enc-mode" value="keypair" />
+          <span>鍵ペア（公開鍵）で暗号化</span>
+        </label>
+      </div>
+
+      <!-- パスフレーズ -->
+      <div id="enc-passphrase-fields" class="sub-panel">
+        <label class="field" for="enc-passphrase">
+          <span>パスフレーズ</span>
+          <input id="enc-passphrase" type="password" autocomplete="new-password" placeholder="8 文字以上" />
+        </label>
+        <label class="field" for="enc-passphrase-confirm">
+          <span>パスフレーズ（確認）</span>
+          <input id="enc-passphrase-confirm" type="password" autocomplete="new-password" />
+        </label>
+        <label class="check-field">
+          <input id="enc-show-passphrase" type="checkbox" />
+          <span>パスフレーズを表示する</span>
+        </label>
+        <p class="hint">
+          パスフレーズは scrypt で鍵に変換されます。忘れると復号できないため、必ず別の場所に控えてください。
+        </p>
+      </div>
+
+      <!-- 鍵ペア -->
+      <div id="enc-keypair-fields" class="sub-panel" hidden>
+        <div class="action-row">
+          <button id="gen-keypair-btn" class="btn btn-secondary" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
+            <span>鍵ペアを生成</span>
+          </button>
+        </div>
+
+        <div id="keypair-result" class="keypair-result" hidden>
+          <div class="key-block">
+            <div class="key-block-head">
+              <span class="key-label">recipient（公開鍵・暗号化に使う）</span>
+              <button id="copy-recipient-btn" class="btn btn-ghost btn-sm" type="button">コピー</button>
+            </div>
+            <textarea id="recipient-output" class="key-textarea" readonly rows="2" spellcheck="false"></textarea>
+          </div>
+          <div class="key-block key-block-secret">
+            <div class="key-block-head">
+              <span class="key-label">identity（秘密鍵・復号に使う）</span>
+              <button id="copy-identity-btn" class="btn btn-ghost btn-sm" type="button">コピー</button>
+            </div>
+            <textarea id="identity-output" class="key-textarea" readonly rows="2" spellcheck="false"></textarea>
+            <div class="action-row">
+              <button id="download-identity-btn" class="btn btn-secondary btn-sm" type="button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                <span>identity をダウンロード</span>
+              </button>
+              <button id="download-recipient-btn" class="btn btn-ghost btn-sm" type="button">recipient をダウンロード</button>
+            </div>
+            <p class="warning">
+              identity（秘密鍵）は復号に必須です。この画面を閉じると再表示できません。必ずダウンロードして安全な場所に保管してください。
+            </p>
+          </div>
+        </div>
+
+        <label class="field" for="enc-recipient">
+          <span>recipient（公開鍵）</span>
+          <input id="enc-recipient" type="text" placeholder="age1..." spellcheck="false" autocomplete="off" />
+        </label>
+        <p class="hint">相手の公開鍵を貼り付けて暗号化することもできます。秘密鍵は相手に渡さないでください。</p>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- 入力 -->
+      <div class="input-tabs" role="tablist" aria-label="入力の種類">
+        <button id="input-tab-text" class="input-tab is-active" type="button" role="tab" aria-selected="true" data-input="text">テキスト</button>
+        <button id="input-tab-file" class="input-tab" type="button" role="tab" aria-selected="false" data-input="file">ファイル</button>
+      </div>
+
+      <div id="enc-text-panel">
+        <label class="field" for="enc-text">
+          <span>暗号化するテキスト</span>
+          <textarea id="enc-text" class="text-area" rows="6" placeholder="ここに秘密のメモを入力"></textarea>
+        </label>
+      </div>
+
+      <div id="enc-file-panel" hidden>
+        <div id="enc-drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="ファイルを選択">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+          <p class="drop-title">ここにファイルをドロップ</p>
+          <p class="drop-hint">または下のボタンで選択（64 MiB まで）</p>
+          <p id="enc-file-name" class="file-name"></p>
+          <p id="enc-file-meta" class="file-meta"></p>
+          <label class="btn btn-primary file-label" for="enc-file-input">ファイルを選択</label>
+          <input id="enc-file-input" type="file" hidden />
+        </div>
+      </div>
+
+      <label class="check-field">
+        <input id="enc-armor-check" type="checkbox" checked />
+        <span>ASCII armor（テキスト）で出力する — コピーして Git や Discord に貼れます</span>
+      </label>
+
+      <div class="action-row">
+        <button id="encrypt-btn" class="btn btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>暗号化する</span>
+        </button>
+      </div>
+
+      <!-- 暗号化結果 -->
+      <div id="enc-result" class="result-block" hidden>
+        <h3 class="result-title">暗号化しました</h3>
+        <p id="enc-result-meta" class="result-meta"></p>
+        <div id="enc-armor-output-wrap" hidden>
+          <textarea id="enc-armor-output" class="key-textarea armor-output" readonly rows="8" spellcheck="false"></textarea>
+          <div class="action-row">
+            <button id="copy-armor-btn" class="btn btn-secondary btn-sm" type="button">armor をコピー</button>
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="download-cipher-btn" class="btn btn-primary" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span id="download-cipher-label">暗号文をダウンロード</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 復号 ============ -->
+    <section id="decrypt-section" class="panel card" hidden>
+      <h2 class="panel-title">復号</h2>
+
+      <div class="key-mode" role="radiogroup" aria-label="復号方式">
+        <label class="radio-field">
+          <input type="radio" name="dec-mode" value="passphrase" checked />
+          <span>パスフレーズで復号</span>
+        </label>
+        <label class="radio-field">
+          <input type="radio" name="dec-mode" value="keypair" />
+          <span>identity（秘密鍵）で復号</span>
+        </label>
+      </div>
+
+      <div id="dec-passphrase-fields" class="sub-panel">
+        <label class="field" for="dec-passphrase">
+          <span>パスフレーズ</span>
+          <input id="dec-passphrase" type="password" autocomplete="current-password" />
+        </label>
+        <label class="check-field">
+          <input id="dec-show-passphrase" type="checkbox" />
+          <span>パスフレーズを表示する</span>
+        </label>
+      </div>
+
+      <div id="dec-keypair-fields" class="sub-panel" hidden>
+        <label class="field" for="dec-identity">
+          <span>identity（秘密鍵）</span>
+          <textarea id="dec-identity" class="key-textarea" rows="2" placeholder="AGE-SECRET-KEY-1..." spellcheck="false"></textarea>
+        </label>
+        <div class="action-row">
+          <label class="btn btn-ghost btn-sm file-label" for="dec-identity-file">identity ファイルを読み込む</label>
+          <input id="dec-identity-file" type="file" accept=".txt,text/plain" hidden />
+        </div>
+        <p class="hint">秘密鍵はこの端末から送信されません。共有端末では使用後に消去してください。</p>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="input-tabs" role="tablist" aria-label="暗号文の種類">
+        <button id="dec-input-tab-file" class="input-tab is-active" type="button" role="tab" aria-selected="true" data-input="file">ファイル</button>
+        <button id="dec-input-tab-text" class="input-tab" type="button" role="tab" aria-selected="false" data-input="text">armor テキスト</button>
+      </div>
+
+      <div id="dec-file-panel">
+        <div id="dec-drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="暗号文ファイルを選択">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <p class="drop-title">暗号文（.age）をドロップ</p>
+          <p class="drop-hint">または下のボタンで選択</p>
+          <p id="dec-file-name" class="file-name"></p>
+          <p id="dec-file-meta" class="file-meta"></p>
+          <label class="btn btn-primary file-label" for="dec-file-input">暗号文を選択</label>
+          <input id="dec-file-input" type="file" hidden />
+        </div>
+      </div>
+
+      <div id="dec-text-panel" hidden>
+        <label class="field" for="dec-armor-input">
+          <span>armor テキスト</span>
+          <textarea id="dec-armor-input" class="key-textarea" rows="6" placeholder="-----BEGIN AGE ENCRYPTED FILE-----" spellcheck="false"></textarea>
+        </label>
+      </div>
+
+      <div class="action-row">
+        <button id="decrypt-btn" class="btn btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          <span>復号する</span>
+        </button>
+      </div>
+
+      <!-- 復号結果 -->
+      <div id="dec-result" class="result-block" hidden>
+        <h3 class="result-title">復号しました</h3>
+        <p id="dec-result-meta" class="result-meta"></p>
+        <div id="dec-text-output-wrap" hidden>
+          <textarea id="dec-text-output" class="key-textarea" readonly rows="8" spellcheck="false"></textarea>
+          <div class="action-row">
+            <button id="copy-decrypted-btn" class="btn btn-secondary btn-sm" type="button">テキストをコピー</button>
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="download-plain-btn" class="btn btn-primary" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span id="download-plain-label">復号結果をダウンロード</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <p class="privacy-note">
+      暗号化・復号はすべて端末内で実行されます。入力したファイル・テキスト・鍵はサーバーへ送信されません。
+    </p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>暗号化ボルトについて</h2>
+      <p>
+        ファイルやメモを <strong>age</strong> 形式で暗号化・復号します。age は
+        <a href="https://age-encryption.org" target="_blank" rel="noopener noreferrer">age-encryption.org</a>
+        で仕様が公開されているモダンなファイル暗号化形式で、CLI の <code>age</code> や sops と同じ暗号文を扱えます。
+        処理はすべてブラウザ内で完結し、入力がサーバーへ送信されることはありません。
+      </p>
+      <h3>2 つの方式</h3>
+      <ul>
+        <li><strong>パスフレーズ式</strong>: 覚えやすい合言葉だけで暗号化・復号します。手軽ですが、合言葉の強さがそのまま安全性になります。</li>
+        <li><strong>鍵ペア式</strong>: 公開鍵（recipient）で暗号化し、秘密鍵（identity）で復号します。秘密鍵を渡さずに相手へ暗号文を送れます。</li>
+      </ul>
+      <h3>使い方</h3>
+      <ol>
+        <li>「暗号化する」で方式を選び、テキストかファイルを入力します。</li>
+        <li>「ASCII armor」を有効にすると、コピーできるテキストとして出力されます。</li>
+        <li>「復号する」で暗号文と鍵を入力すると、元の内容に戻ります。</li>
+      </ol>
+      <h3>鍵ペアを使うときの注意</h3>
+      <ul>
+        <li>identity（秘密鍵）は復号に必須です。画面を閉じると再表示できないため、必ずダウンロードして保管してください。</li>
+        <li>identity は localStorage などに自動保存しません。共有端末では使用後に消去してください。</li>
+        <li>recipient（公開鍵）は相手に渡して構いません。identity は絶対に渡さないでください。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>age-encryption（BSD-3-Clause, v0.3.1）を同梱し、ブラウザ内で実行します。</li>
+        <li>パスフレーズは scrypt、鍵ペアは X25519 で鍵を導出します。</li>
+        <li>出力は標準 age 形式なので、CLI の <code>age -d</code> でも復号できます。</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="暗号化ボルト"
+    data-app-icon="lock"
+    data-app-color="#0ea5e9"
+  ></script>
+
+  <!-- age ライブラリ（同梱・オフライン動作） -->
+  <script src="vendor/age.js"></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
