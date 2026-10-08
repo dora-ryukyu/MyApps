@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Studio — MyApps</title>
+  <meta name="description" content="CSV/TSV を貼り付けて、折れ線・棒・散布・箱ひげ・ヒートマップをブラウザ内で描画。軸・対数・正規化を設定し、SVG/PNG/設定 JSON に書き出します。データは送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/header.css">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+  </script>
+
+  <!-- チャート描画ライブラリ (Chart.js 4.4.9 / MIT)。バージョン固定 + SRI。
+       入力データは送信しません。取得元は meta.json の net に宣言。 -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"
+    integrity="sha384-b0GXujLkk9eYYSmcSfoyZbfyElGAQnDyY0skCHSG6w3JgTMFnz11ggrTAr7seu9f"
+    crossorigin="anonymous"
+    defer></script>
+</head>
+<body>
+  <main class="app-main">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Chart &amp; Data</p>
+        <h1>Chart Studio</h1>
+        <p class="lead">表データを貼り付けてグラフ化。折れ線・棒・散布・箱ひげ・ヒートマップを、サーバーに送らずに描いて書き出します。</p>
+      </div>
+      <div class="hero-stat" aria-hidden="true">
+        <div><span>Import</span><strong>CSV</strong></div>
+        <div><span>Export</span><strong>SVG</strong></div>
+      </div>
+    </header>
+
+    <div class="grid-two">
+      <!-- 入力 -->
+      <section class="panel input-panel">
+        <div class="panel-head">
+          <div>
+            <h2>入力</h2>
+            <p class="panel-sub">CSV/TSV を貼り付けるか、ファイルをドロップします。</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-ghost" id="btn-sample" type="button">サンプル</button>
+            <button class="btn btn-ghost" id="btn-paste" type="button">貼り付け</button>
+            <button class="btn btn-ghost" id="btn-clear" type="button">クリア</button>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <label class="field-label" for="delimiter-select">区切り文字</label>
+          <select id="delimiter-select">
+            <option value="auto">自動判定</option>
+            <option value=",">カンマ (,)</option>
+            <option value="\t">タブ (TSV)</option>
+            <option value=";">セミコロン (;)</option>
+            <option value="|">パイプ (|)</option>
+          </select>
+          <label class="check"><input id="opt-header" type="checkbox" checked><span>1 行目をヘッダー</span></label>
+          <label class="check"><input id="opt-trim" type="checkbox" checked><span>空白をトリム</span></label>
+        </div>
+
+        <div id="drop-zone" class="drop-zone">
+          <p class="drop-title">ここに CSV/TSV をドロップ</p>
+          <p class="drop-hint">または</p>
+          <label class="file-label btn btn-ghost" for="file-input">ファイルを選択</label>
+          <input id="file-input" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden>
+        </div>
+
+        <textarea id="input-data" placeholder="name,score,date" spellcheck="false"></textarea>
+        <p class="hint" id="input-info">まだデータがありません。</p>
+
+        <div class="stat-row">
+          <div class="stat-card"><span class="stat-label">行</span><strong id="stat-rows">0</strong></div>
+          <div class="stat-card"><span class="stat-label">列</span><strong id="stat-cols">0</strong></div>
+        </div>
+      </section>
+
+      <!-- 設定 -->
+      <section class="panel settings-panel">
+        <div class="panel-head">
+          <div>
+            <h2>グラフ設定</h2>
+            <p class="panel-sub">種類と列を選ぶと自動で描画されます。</p>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="chart-type-select">グラフの種類</label>
+          <select id="chart-type-select">
+            <option value="line">折れ線</option>
+            <option value="bar">棒</option>
+            <option value="scatter">散布図</option>
+            <option value="box">箱ひげ図</option>
+            <option value="heatmap">ヒートマップ</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="x-column-select">X 軸</label>
+          <select id="x-column-select"></select>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label">Y 軸（数値列・複数可）</label>
+          <div id="y-columns" class="checkbox-list"></div>
+        </div>
+
+        <div class="field-row" id="group-field">
+          <label class="field-label" for="group-column-select">グループ列（散布図のみ）</label>
+          <select id="group-column-select"></select>
+        </div>
+
+        <div class="control-row">
+          <label class="check"><input id="opt-log-x" type="checkbox"><span>X 対数</span></label>
+          <label class="check"><input id="opt-log-y" type="checkbox"><span>Y 対数</span></label>
+          <label class="check"><input id="opt-legend" type="checkbox" checked><span>凡例</span></label>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="normalize-select">値の正規化</label>
+          <select id="normalize-select">
+            <option value="none">なし</option>
+            <option value="minmax">min–max（0〜1）</option>
+            <option value="zscore">z-score（平均 0・σ1）</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="palette-select">系列色</label>
+          <select id="palette-select">
+            <option value="default">既定（10 色）</option>
+            <option value="colorblind">色覚多様性対応（Okabe–Ito）</option>
+            <option value="warm">ウォーム</option>
+            <option value="cool">クール</option>
+            <option value="mono">モノトーン</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="bin-count-range">ビン数（ヒートマップ）: <span id="bin-count-value">20</span></label>
+          <input id="bin-count-range" type="range" min="4" max="60" step="1" value="20">
+        </div>
+
+        <div class="field-row">
+          <label class="field-label" for="chart-title-input">タイトル</label>
+          <input id="chart-title-input" type="text" placeholder="（任意）">
+        </div>
+
+        <div class="control-row">
+          <div class="mini-field">
+            <label class="field-label" for="x-label-input">X ラベル</label>
+            <input id="x-label-input" type="text" placeholder="（任意）">
+          </div>
+          <div class="mini-field">
+            <label class="field-label" for="y-label-input">Y ラベル</label>
+            <input id="y-label-input" type="text" placeholder="（任意）">
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- グラフ -->
+    <section class="panel chart-panel">
+      <div class="panel-head">
+        <div>
+          <h2>グラフ</h2>
+          <p class="panel-sub" id="chart-status">データを入力してください。</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn btn-ghost" id="btn-export-png" type="button">PNG</button>
+          <button class="btn btn-ghost" id="btn-export-svg" type="button">SVG</button>
+          <button class="btn btn-ghost" id="btn-copy-config" type="button">設定 JSON をコピー</button>
+        </div>
+      </div>
+
+      <div class="chart-stage">
+        <canvas id="chart-canvas" width="960" height="520"></canvas>
+        <div class="chart-empty" id="chart-empty">グラフがここに表示されます。</div>
+      </div>
+      <p class="chart-error" id="chart-error" role="alert" hidden></p>
+
+      <div class="config-block">
+        <label class="field-label" for="export-json">設定 JSON</label>
+        <textarea id="export-json" readonly spellcheck="false"></textarea>
+      </div>
+    </section>
+
+    <!-- プレビュー -->
+    <section class="panel preview-panel">
+      <div class="panel-head">
+        <div>
+          <h2>データプレビュー</h2>
+          <p class="panel-sub">先頭 50 行を表示します。</p>
+        </div>
+      </div>
+      <div class="table-wrap" id="preview-table"></div>
+    </section>
+  </main>
+
+  <script type="module" src="script.js"></script>
+  <script src="../../shared/header.js"
+    data-app-name="Chart Studio"
+    data-app-icon="chart-column"
+    data-app-color="#ea580c"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "id": "chart-studio",
+  "name": "Chart Studio",
+  "description": "CSV/TSV を貼り付けて折れ線・棒・散布・箱ひげ・ヒートマップを描画。軸・対数・正規化を設定し、SVG/PNG/設定 JSON に書き出します。データは送信しません。",
+  "icon": "chart-column",
+  "color": "#ea580c",
+  "tags": ["データ", "可視化", "グラフ", "CSV", "ツール"],
+  "net": {
+    "externalHosts": ["cdn.jsdelivr.net"],
+    "sendsData": false,
+    "note": "Chart.js 4.4.9 を CDN から取得。入力した表データは送信しません。"
+  }
+}

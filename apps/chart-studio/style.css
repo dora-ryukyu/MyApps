@@ -1,0 +1,371 @@
+/* ============================================
+   Chart Studio — アプリ固有スタイル
+   共通トークン (shared/base.css) を参照する。
+   ============================================ */
+
+:root {
+  --app-color: #ea580c;
+  --app-color-soft: rgba(234, 88, 12, 0.1);
+}
+
+.app-main {
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-6) var(--sp-16);
+}
+
+/* --- ヒーロー --- */
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  padding: var(--sp-6) 0 var(--sp-8);
+  flex-wrap: wrap;
+}
+.eyebrow {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-color);
+}
+.hero h1 {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+  margin-top: var(--sp-1);
+}
+.lead {
+  color: var(--c-text-2);
+  max-width: 60ch;
+  margin-top: var(--sp-2);
+}
+.hero-stat {
+  display: flex;
+  gap: var(--sp-6);
+}
+.hero-stat div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.hero-stat span {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.hero-stat strong {
+  font-size: var(--text-lg);
+  color: var(--app-color);
+}
+
+/* --- パネル --- */
+.panel {
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-6);
+}
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.panel-head h2 {
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+}
+.panel-sub {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+  margin-top: 2px;
+}
+.panel-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-6);
+}
+
+/* --- ボタン --- */
+.btn {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-solid);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast), background var(--duration-fast);
+}
+.btn:hover {
+  border-color: var(--app-color);
+  color: var(--app-color);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+.btn-primary {
+  background: var(--app-color);
+  border-color: var(--app-color);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--app-color);
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* --- 入力 --- */
+.field-row {
+  margin-bottom: var(--sp-4);
+}
+.field-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--c-text-2);
+  margin-bottom: var(--sp-1);
+}
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+.mini-field {
+  flex: 1 1 120px;
+}
+select,
+input[type="text"],
+textarea {
+  width: 100%;
+  font-family: var(--font);
+  font-size: var(--text-base);
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-3);
+  outline: none;
+}
+select:focus-visible,
+input[type="text"]:focus-visible,
+textarea:focus-visible {
+  border-color: var(--app-color);
+  box-shadow: 0 0 0 3px var(--app-color-soft);
+}
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  cursor: pointer;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--app-color);
+}
+
+#input-data {
+  min-height: 180px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  margin-top: var(--sp-3);
+}
+.hint {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+  margin-top: var(--sp-2);
+  min-height: 1.2em;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.checkbox-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  background: var(--c-surface-alt);
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+}
+.checkbox-list label:has(input:checked) {
+  border-color: var(--app-color);
+  color: var(--app-color);
+  background: var(--app-color-soft);
+}
+.checkbox-list input {
+  accent-color: var(--app-color);
+}
+
+/* --- ドロップゾーン --- */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-5);
+  border: 1.5px dashed var(--c-border);
+  border-radius: var(--r-lg);
+  text-align: center;
+  color: var(--c-text-3);
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.drop-zone.dragover {
+  border-color: var(--app-color);
+  background: var(--app-color-soft);
+}
+.drop-title {
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+.drop-hint {
+  font-size: var(--text-xs);
+}
+.file-label {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* --- 統計 --- */
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.stat-card {
+  background: var(--c-surface-alt);
+  border-radius: var(--r);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+}
+.stat-label {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+}
+.stat-card strong {
+  font-size: var(--text-xl);
+  color: var(--app-color);
+}
+
+/* --- チャート --- */
+.chart-stage {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  background: var(--c-surface-alt);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+#chart-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+.chart-error {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--c-error);
+  font-size: var(--text-sm);
+}
+
+.config-block {
+  margin-top: var(--sp-4);
+}
+#export-json {
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* --- プレビュー --- */
+.table-wrap {
+  overflow: auto;
+  max-height: 360px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+}
+.table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--text-sm);
+}
+.table-wrap th,
+.table-wrap td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+.table-wrap th {
+  position: sticky;
+  top: 0;
+  background: var(--c-surface-alt);
+  color: var(--c-text-2);
+  font-weight: 600;
+}
+
+/* --- レスポンシブ --- */
+@media (max-width: 860px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+  .app-main {
+    padding: var(--sp-4) var(--sp-3) var(--sp-12);
+  }
+  .chart-stage {
+    height: 380px;
+  }
+  .hero-stat {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-zone,
+  .btn {
+    transition: none;
+  }
+}
