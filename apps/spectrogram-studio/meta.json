@@ -1,0 +1,8 @@
+{
+  "id": "spectrogram-studio",
+  "name": "スペクトログラム",
+  "description": "音声の周波数成分を時間軸で可視化。FFT・窓関数・dB スケールを調整し、スペクトル断面やピークを確認して PNG/CSV に書き出します。音声は送信しません。",
+  "icon": "audio-waveform",
+  "color": "#0891b2",
+  "tags": ["音声", "DTM", "音ゲー", "周波数", "解析"]
+}

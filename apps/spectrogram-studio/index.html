@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スペクトログラム — MyApps</title>
+  <meta name="description" content="音声の周波数成分を時間軸で可視化するスペクトログラム解析。FFT・窓関数・dB スケールを調整し、スペクトル断面やピークを確認、PNG/CSV に書き出します。音声は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">スペクトログラム</h1>
+        <p class="app-subtitle">
+          音声の周波数成分を時間軸で可視化します。FFT・窓関数・dB スケールを変えて帯域バランス、
+          ノイズ、音ゲー曲のリズム成分を目で確認できます。音声は端末の外へ送信されません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- 音声の選択 -->
+    <section id="source-section" class="panel card">
+      <div class="panel-head">
+        <h2 class="panel-title">音声を読み込む</h2>
+        <button id="clear-file-btn" class="btn btn-ghost btn-sm" type="button" hidden>別の音声を選ぶ</button>
+      </div>
+
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="音声を選択">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-3a2 2 0 0 1 2-2"/></svg>
+        <p class="drop-title">ここに音声ファイルをドロップ</p>
+        <p class="drop-hint">または下のボタンで選択（WAV / MP3 / M4A / OGG / FLAC / WebM）</p>
+        <p id="file-name" class="file-name"></p>
+        <p id="file-meta" class="file-meta"></p>
+        <label class="btn btn-primary file-label" for="file-input">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span>音声を選択</span>
+        </label>
+        <input id="file-input" type="file" accept="audio/*,.m4a,.flac,.ogg,.opus,.wav,.mp3" hidden />
+      </div>
+
+      <div class="action-row">
+        <button id="record-btn" class="btn btn-ghost" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <span>マイク入力を表示</span>
+        </button>
+        <span id="record-status" class="record-status">マイクは停止中</span>
+      </div>
+    </section>
+
+    <!-- 解析と表示 -->
+    <div id="editor-section" hidden>
+
+      <div class="layout-grid">
+        <section class="panel card settings-panel">
+          <h2 class="panel-title">解析設定</h2>
+
+          <label class="field" for="fft-size">
+            <span>FFT サイズ（窓長）</span>
+            <select id="fft-size" class="select-input">
+              <option value="256">256（周波数は粗く時間は細かい）</option>
+              <option value="512">512</option>
+              <option value="1024">1024</option>
+              <option value="2048" selected>2048（既定）</option>
+              <option value="4096">4096</option>
+              <option value="8192">8192（周波数は細かく時間は粗い）</option>
+            </select>
+          </label>
+
+          <label class="field" for="window-select">
+            <span>窓関数</span>
+            <select id="window-select" class="select-input">
+              <option value="hann" selected>Hann（ハン）</option>
+              <option value="hamming">Hamming（ハミング）</option>
+              <option value="blackman">Blackman（ブラックマン）</option>
+              <option value="rectangular">Rectangular（矩形）</option>
+            </select>
+          </label>
+
+          <label class="field" for="hop-size">
+            <span>hop（フレーム間隔）</span>
+            <select id="hop-size" class="select-input">
+              <option value="128">FFT の 1/16</option>
+              <option value="256">FFT の 1/8</option>
+              <option value="384">FFT の 3/16</option>
+              <option value="512" selected>FFT の 1/4（既定）</option>
+              <option value="1024">FFT の 1/2</option>
+            </select>
+          </label>
+
+          <label class="field" for="colormap-select">
+            <span>カラーマップ</span>
+            <select id="colormap-select" class="select-input">
+              <option value="viridis" selected>Viridis</option>
+              <option value="magma">Magma</option>
+              <option value="ice">Ice</option>
+              <option value="grayscale">グレースケール</option>
+            </select>
+          </label>
+
+          <div class="field">
+            <div class="field-head">
+              <span>表示下限</span>
+              <span id="min-db-value" class="badge">-100 dB</span>
+            </div>
+            <input id="min-db" type="range" min="-140" max="-20" step="2" value="-100" />
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <span>表示上限</span>
+              <span id="max-db-value" class="badge">0 dB</span>
+            </div>
+            <input id="max-db" type="range" min="-40" max="20" step="1" value="0" />
+          </div>
+
+          <label class="check-field">
+            <input id="log-freq-check" type="checkbox" checked />
+            <span>対数周波数軸（低域を広く表示）</span>
+          </label>
+
+          <div class="field-row">
+            <label class="field" for="freq-min">
+              <span>下限周波数 (Hz)</span>
+              <input id="freq-min" type="number" min="1" step="10" inputmode="numeric" value="20" />
+            </label>
+            <label class="field" for="freq-max">
+              <span>上限周波数 (Hz)</span>
+              <input id="freq-max" type="number" min="100" step="1000" inputmode="numeric" value="20000" />
+            </label>
+          </div>
+
+          <div class="action-row">
+            <button id="analyze-btn" class="btn btn-primary" type="button" disabled>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-3a2 2 0 0 1 2-2"/></svg>
+              <span>解析する</span>
+            </button>
+            <button id="cancel-btn" class="btn btn-ghost" type="button" hidden>キャンセル</button>
+          </div>
+
+          <div id="progress-wrap" class="progress-block" hidden>
+            <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+            <p id="progress-label" class="hint" aria-live="polite">準備中…</p>
+          </div>
+        </section>
+
+        <section class="panel card">
+          <h2 class="panel-title">解析情報</h2>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat-label">長さ</span>
+              <span id="stat-duration" class="stat-value">-</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">フレーム × ビン</span>
+              <span id="stat-size" class="stat-value">-</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">周波数分解能</span>
+              <span id="stat-resolution" class="stat-value">-</span>
+            </div>
+          </div>
+          <p id="status-text" class="hint" aria-live="polite">音声を読み込んでください。</p>
+
+          <h3 class="sub-title">検出ピーク <span id="peak-count" class="badge">0</span></h3>
+          <ol id="peak-list" class="peak-list">
+            <li class="peak-empty">カーソル位置の断面からピークを表示します</li>
+          </ol>
+        </section>
+      </div>
+
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">スペクトログラム</h2>
+          <div class="transport">
+            <button id="play-btn" class="btn btn-icon" type="button" aria-label="再生 / 一時停止" disabled>
+              <svg data-play-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              <svg data-pause-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+            </button>
+            <span id="time-label" class="time-label">0:00.00</span>
+            <span id="cursor-readout" class="cursor-readout">カーソル: -</span>
+          </div>
+        </div>
+
+        <div id="spectrogram-wrap" class="spectrogram-wrap">
+          <canvas id="spectrogram-canvas" width="900" height="360" aria-label="スペクトログラム"></canvas>
+          <div id="spectrogram-empty" class="output-placeholder">音声を解析するとスペクトログラムが表示されます</div>
+        </div>
+        <p class="field-note">クリックするとその時刻へ移動し、下に周波数断面（FFT スライス）を表示します。</p>
+
+        <div class="action-row">
+          <button id="save-png-btn" class="btn btn-ghost" type="button" disabled>PNG を保存</button>
+          <button id="save-csv-btn" class="btn btn-ghost" type="button" disabled>断面 CSV を保存</button>
+          <button id="save-peaks-btn" class="btn btn-ghost" type="button" disabled>ピーク CSV を保存</button>
+        </div>
+        <audio id="audio" hidden></audio>
+      </section>
+
+      <section class="panel card">
+        <h2 class="panel-title">スペクトル断面（FFT スライス）</h2>
+        <div id="slice-wrap" class="slice-wrap">
+          <canvas id="slice-canvas" width="900" height="200" aria-label="スペクトル断面"></canvas>
+          <div id="slice-empty" class="output-placeholder">スペクトログラムをクリックすると断面を表示します</div>
+        </div>
+        <p class="field-note">横軸は周波数、縦軸は振幅 (dB)。赤い印は検出したピークです。</p>
+      </section>
+    </div>
+
+    <p class="privacy-note">音声ファイルはすべて端末内で処理され、サーバーへ送信されません。</p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>スペクトログラムについて</h2>
+      <p>
+        音声を短い区間に切り出して周波数成分へ分解し、時間 × 周波数 × 強さの 2 次元画像として表示します。
+        帯域バランス、ノイズ、ハイハットやベースの成分など、耳では分かりにくい違いを目で確認できます。
+      </p>
+      <h3>使い方</h3>
+      <ol>
+        <li>音声を選ぶかマイクで録音します。</li>
+        <li>FFT サイズ・hop・窓関数を決めて「解析する」を押します。</li>
+        <li>スペクトログラム上をクリックすると、その時刻の周波数断面とピークが表示されます。</li>
+        <li>表示レンジやカラーマップを変えて見やすくし、PNG / CSV に書き出します。</li>
+      </ol>
+      <h3>パラメータの目安</h3>
+      <ul>
+        <li><strong>FFT サイズ</strong>を大きくすると周波数の分離が細かくなりますが、時間の分解は粗くなります。</li>
+        <li><strong>hop</strong> を小さくすると時間方向が滑らかになりますが、計算量が増えます。</li>
+        <li>窓関数は Hann が無難です。矩形は測定向きですがスペクトル漏れが増えます。</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>音声をデコードし、モノラルへ変換</li>
+        <li>Web Worker で STFT（窓掛け → FFT → 振幅 → dB）を実行</li>
+        <li>dB 行列をカラーマップで Canvas に描画。断面・ピーク・CSV を生成</li>
+      </ol>
+      <p class="hint">解析はすべてブラウザ内で完結し、音声がサーバーへ送信されることはありません。</p>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="スペクトログラム"
+    data-app-icon="audio-waveform"
+    data-app-color="#0891b2"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
