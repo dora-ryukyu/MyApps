@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToDo スタジオ — MyApps</title>
+  <meta name="description" content="締切つきのタスクをブラウザ内で管理。今日/今週/期限切れのビュー、タグ・プロジェクト、優先度、繰り返し、VTODO/ICS の入出力に対応。データは送信しません。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+  <main class="app-main">
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">ToDo スタジオ</h1>
+        <p class="app-subtitle">
+          締切つきの「やること」をブラウザ内で管理します。タスクはこの端末にのみ保存され、
+          外部へ送信しません（ICS 取り込みで URL を指定したときだけ、その URL を取得します）。
+        </p>
+      </div>
+      <div class="heading-actions">
+        <button id="new-task-btn" class="btn btn-primary" type="button">＋ 新しいタスク</button>
+        <button id="copy-today-btn" class="btn btn-secondary" type="button">今日をコピー</button>
+      </div>
+    </div>
+
+    <p id="copy-status" class="status-line" role="status" aria-live="polite"></p>
+
+    <!-- タスクの追加 / 編集 -->
+    <section id="task-form" class="card form-card" hidden>
+      <h2 id="form-title" class="panel-title">新しいタスク</h2>
+      <form id="task-form-el" autocomplete="off">
+        <div class="form-grid">
+          <label class="field field-wide">
+            <span>タイトル</span>
+            <input id="f-title" type="text" required placeholder="例: 情報理論レポート提出" />
+          </label>
+          <label class="field">
+            <span>期限</span>
+            <input id="f-due" type="date" />
+          </label>
+          <label class="field">
+            <span>時刻 (任意)</span>
+            <input id="f-time" type="time" />
+          </label>
+          <label class="field">
+            <span>優先度</span>
+            <select id="f-priority"></select>
+          </label>
+          <label class="field">
+            <span>プロジェクト</span>
+            <input id="f-project" type="text" list="project-options" placeholder="例: 大学" />
+          </label>
+          <label class="field">
+            <span>タグ (カンマ区切り)</span>
+            <input id="f-tags" type="text" placeholder="例: 学務, レポート" />
+          </label>
+          <label class="field">
+            <span>繰り返し</span>
+            <select id="f-repeat"></select>
+          </label>
+          <label class="field field-wide">
+            <span>メモ</span>
+            <textarea id="f-notes" rows="2" placeholder="提出先・分量・参考リンクなど"></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button id="f-save" class="btn btn-primary" type="submit">保存</button>
+          <button id="f-cancel" class="btn btn-secondary" type="button">キャンセル</button>
+        </div>
+      </form>
+      <datalist id="project-options"></datalist>
+    </section>
+
+    <div class="layout">
+      <!-- サイドバー -->
+      <aside class="sidebar">
+        <nav id="view-nav" class="filters card" aria-label="ビュー">
+          <div class="panel-head">
+            <h2 class="panel-title">ビュー</h2>
+          </div>
+          <div class="filter-list">
+            <button class="filter-btn is-active" type="button" data-view="today">
+              <span>今日</span><span id="count-today" class="count">0</span>
+            </button>
+            <button class="filter-btn" type="button" data-view="week">
+              <span>今週</span><span id="count-week" class="count">0</span>
+            </button>
+            <button class="filter-btn" type="button" data-view="overdue">
+              <span>期限切れ</span><span id="count-overdue" class="count">0</span>
+            </button>
+            <button class="filter-btn" type="button" data-view="all">
+              <span>すべて</span><span id="count-all" class="count">0</span>
+            </button>
+            <button class="filter-btn" type="button" data-view="done">
+              <span>完了</span><span id="count-done" class="count">0</span>
+            </button>
+          </div>
+        </nav>
+
+        <section class="card options-card">
+          <div class="panel-head">
+            <h2 class="panel-title">絞り込み</h2>
+          </div>
+          <label class="field field-block">
+            <span>検索</span>
+            <input id="search-input" type="search" placeholder="タイトル・メモ・タグ" autocomplete="off" />
+          </label>
+          <label class="field field-block">
+            <span>タグ</span>
+            <select id="tag-filter"></select>
+          </label>
+          <label class="field field-block">
+            <span>プロジェクト</span>
+            <select id="project-filter"></select>
+          </label>
+          <label class="field field-block">
+            <span>並び順</span>
+            <select id="sort-select">
+              <option value="due">期限順</option>
+              <option value="priority">優先度順</option>
+              <option value="created">追加が新しい順</option>
+              <option value="title">タイトル順</option>
+            </select>
+          </label>
+          <label class="field field-inline">
+            <input id="show-done" type="checkbox" />
+            <span>完了も表示</span>
+          </label>
+        </section>
+
+        <section class="card io-card">
+          <div class="panel-head">
+            <h2 class="panel-title">ICS / VTODO</h2>
+          </div>
+          <div class="io-actions">
+            <label class="btn btn-ghost btn-sm file-label" for="import-file">ファイルを取り込み</label>
+            <input id="import-file" type="file" accept=".ics,.ical,.ifb,text/calendar" hidden />
+            <button id="export-btn" class="btn btn-ghost btn-sm" type="button">ICS を書き出し</button>
+          </div>
+          <label class="field field-block">
+            <span>ICS を貼り付け</span>
+            <textarea id="import-text" rows="3" placeholder="BEGIN:VCALENDAR … を貼り付け"></textarea>
+          </label>
+          <div class="io-actions">
+            <button id="import-text-btn" class="btn btn-secondary btn-sm" type="button">貼り付けを取り込む</button>
+          </div>
+          <label class="field field-block">
+            <span>購読 URL (Moodle 等)</span>
+            <input id="import-url" type="url" inputmode="url" placeholder="https://…/calendar.ics" />
+          </label>
+          <div class="io-actions">
+            <button id="import-url-btn" class="btn btn-secondary btn-sm" type="button">URL から取り込む</button>
+          </div>
+          <p id="import-status" class="hint" role="status" aria-live="polite"></p>
+          <p class="side-note">取り込んだタスクは端末内に保存します。UID が同じものは更新し、重複追加しません。</p>
+        </section>
+      </aside>
+
+      <!-- メイン -->
+      <section class="content">
+        <div class="list-head card">
+          <div>
+            <h2 id="list-title" class="panel-title">今日</h2>
+            <p id="list-meta" class="hint"></p>
+          </div>
+          <div class="list-tools">
+            <button id="toggle-kanban-btn" class="btn btn-ghost btn-sm" type="button">カンバン</button>
+          </div>
+        </div>
+
+        <ul id="task-list" class="task-list"></ul>
+        <div id="kanban" class="kanban" hidden></div>
+        <div id="task-empty" class="empty-state" hidden>
+          <p>ここに表示するタスクはありません。</p>
+        </div>
+      </section>
+    </div>
+
+    <details class="help card">
+      <summary>使い方</summary>
+      <ul>
+        <li><strong>追加</strong>: 「＋ 新しいタスク」から、タイトル・期限・優先度・タグ・プロジェクトを指定します。</li>
+        <li><strong>完了</strong>: チェックを入れると完了。繰り返しタスクは次回の期限に進んで残ります。</li>
+        <li><strong>ビュー</strong>: 今日 / 今週 / 期限切れ / すべて / 完了。タグ・プロジェクト・検索で絞り込めます。</li>
+        <li><strong>ICS</strong>: <code>.ics</code> ファイル・貼り付け・購読 URL から VTODO / VEVENT (Moodle の締切) を取り込み、VTODO として書き出せます。</li>
+        <li><strong>今日をコピー</strong>: 今日と期限切れのタスクを 1 行にまとめてコピーします (Discord に貼る / <code>/remind</code> の入力に)。</li>
+        <li>すべてブラウザ内で完結し、タスクは送信しません。</li>
+      </ul>
+    </details>
+  </main>
+
+  <script src="../../shared/header.js"
+    data-app-name="ToDo スタジオ"
+    data-app-icon="list-todo"
+    data-app-color="#0d9488"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
