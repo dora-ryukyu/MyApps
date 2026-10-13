@@ -1,0 +1,10 @@
+{
+  "id": "secret-vault",
+  "name": "シークレット・ボルト",
+  "description": "ログイン情報・APIキー・2FA を端末内で暗号化保管。マスターパスフレーズ + AES-GCM、検索・タグ・TOTP・自動ロックに対応。送信なし。",
+  "icon": "key-round",
+  "color": "#14b8a6",
+  "tags": ["ツール", "セキュリティ", "パスワード", "2FA"],
+  "net": "送信なし（秘密は端末外へ送信しない。otplib の読込のみ GET）",
+  "storage": "localStorage（暗号文のみ）"
+}
