@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>重複ファイル整理 — Duplicate Finder</title>
+  <meta name="description"
+    content="選んだフォルダの完全重複と類似画像を端末内で検出。合計サイズと削減見込みを表示し、同名衝突を避けて退避フォルダへ移動、またはレポート出力。削除はしません。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">重複ファイル整理</h1>
+        <p class="app-subtitle">
+          フォルダを選ぶと、完全に同じファイルと「ほぼ同じ」画像を端末内だけで見つけます。
+          合計サイズと削減見込みを確認し、退避フォルダへ移動するか、レポートとして書き出せます。
+          <strong>削除はしません。</strong>
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- フォルダの選択と設定 -->
+    <section class="panel card">
+      <h2 class="panel-title">1. フォルダを選ぶ</h2>
+
+      <div class="source-row">
+        <button id="pick-folder-btn" class="btn btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+          </svg>
+          <span>フォルダを開く（移動に対応）</span>
+        </button>
+
+        <label class="btn btn-ghost" for="folder-input" id="folder-input-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 4v16h16" />
+            <path d="m20 20-8-8" />
+            <path d="M12 12h8v8" />
+          </svg>
+          <span>フォルダを選ぶ（読み取りのみ）</span>
+        </label>
+        <input id="folder-input" type="file" webkitdirectory directory multiple hidden />
+
+        <label class="btn btn-ghost" for="restore-input" id="restore-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          <span>前回のレポートを開く</span>
+        </label>
+        <input id="restore-input" type="file" accept=".json,application/json" hidden />
+      </div>
+
+      <p id="scan-root" class="scan-root" aria-live="polite"></p>
+
+      <div class="options-grid">
+        <label class="field" for="min-size-select">
+          <span>最小サイズ</span>
+          <select id="min-size-select" class="select-input">
+            <option value="1">1 B（すべて）</option>
+            <option value="1024" selected>1 KB</option>
+            <option value="10240">10 KB</option>
+            <option value="102400">100 KB</option>
+            <option value="1048576">1 MB</option>
+          </select>
+        </label>
+
+        <div class="field">
+          <div class="field-head">
+            <span>類似画像のしきい値</span>
+            <span id="threshold-value" class="badge">距離 10 / 64</span>
+          </div>
+          <input id="similar-threshold" type="range" min="0" max="24" step="1" value="10" />
+        </div>
+
+        <label class="check-field">
+          <input id="similar-toggle" type="checkbox" checked />
+          <span>類似画像も検出する（dHash）</span>
+        </label>
+      </div>
+
+      <div class="action-row">
+        <button id="scan-btn" class="btn btn-primary" type="button" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="m16 16-1.9-1.9" />
+          </svg>
+          <span>重複をさがす</span>
+        </button>
+        <button id="cancel-scan-btn" class="btn btn-ghost" type="button" hidden>中断</button>
+      </div>
+
+      <div id="scan-progress-wrap" class="progress-block" hidden>
+        <div class="progress-track">
+          <div id="scan-progress-bar" class="progress-fill"></div>
+        </div>
+        <p id="scan-progress-label" class="hint" aria-live="polite">準備中…</p>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section id="results-section" class="panel card" hidden>
+      <div class="panel-head">
+        <h2 class="panel-title">2. 結果</h2>
+        <label class="field inline-field" for="sort-select">
+          <span>並べ替え</span>
+          <select id="sort-select" class="select-input">
+            <option value="size">合計サイズが大きい順</option>
+            <option value="count">ファイル数が多い順</option>
+            <option value="name">名前順</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="summary-stats" class="stats-grid"></div>
+
+      <div id="groups-list" class="groups-list" role="list" aria-label="重複グループ一覧"></div>
+      <p id="empty-result" class="hint" hidden>重複は見つかりませんでした。</p>
+
+      <div class="action-row action-row-wrap">
+        <button id="report-json-btn" class="btn btn-ghost" type="button" disabled>レポート (JSON)</button>
+        <button id="report-csv-btn" class="btn btn-ghost" type="button" disabled>レポート (CSV)</button>
+        <button id="move-btn" class="btn btn-primary" type="button" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+          <span>退避フォルダへ移動</span>
+        </button>
+      </div>
+      <p id="move-hint" class="hint"></p>
+
+      <div id="move-progress-wrap" class="progress-block" hidden>
+        <div class="progress-track">
+          <div id="move-progress-bar" class="progress-fill"></div>
+        </div>
+        <p id="move-progress-label" class="hint" aria-live="polite">移動中…</p>
+      </div>
+    </section>
+
+    <p class="privacy-note">
+      ファイルはすべて端末内で読み取られ、外部へ送信されません。このアプリに削除機能はありません。
+    </p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" hidden>
+    <div class="modal-content card" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2 id="info-title">重複ファイル整理について</h2>
+      <p>
+        4 年分の写真・ダウンロード・ビルド生成物には、同じものや「ほぼ同じ」ものが混ざりがちです。
+        このアプリは、選んだフォルダの中を端末内だけで走査し、重複を見つけて整理の判断材料を出します。
+      </p>
+      <h3>しくみ</h3>
+      <ol>
+        <li>ファイル一覧を取得し、サイズで候補を絞ります。</li>
+        <li>先頭 / 末尾 64 KB のハッシュを比べ、さらに候補を絞ります。</li>
+        <li>残った候補だけ全文の <code>SHA-256</code> を計算して「完全重複」を確定します。</li>
+        <li>画像は 9×8 に縮小したグレースケールの <code>dHash</code> で「類似」グループも検出します。</li>
+      </ol>
+      <h3>整理のしかた（非破壊）</h3>
+      <ul>
+        <li><strong>レポート (JSON / CSV)</strong>：グループと採用/移動予定を書き出すだけ。元ファイルは動きません。</li>
+        <li><strong>退避フォルダへ移動</strong>：グループごとに残す 1 件を選び、それ以外を退避フォルダへ移動します。
+          同名は <code>名前 (1).ext</code> のように自動で回避します。</li>
+        <li>移動は Chromium 系の「フォルダを開く」で選んだときのみ使えます（Firefox はレポート + 手動整理）。</li>
+        <li>このアプリに<strong>削除機能はありません</strong>。移動したファイルはいつでも戻せます。</li>
+      </ul>
+      <h3>注意</h3>
+      <ul>
+        <li>dHash は回転・大きなトリミングに弱いため、「ほぼ同じ」の範囲はしきい値で調整してください。</li>
+        <li>数万ファイルの走査は時間がかかります。進捗を見ながら「中断」できます。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script src="../../shared/header.js" data-app-name="重複ファイル整理" data-app-icon="copy"
+    data-app-color="#f97316"></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>
