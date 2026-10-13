@@ -1,0 +1,13 @@
+{
+  "id": "feed-reader",
+  "name": "RSS リーダー",
+  "description": "RSS/Atom を購読して本文だけを読むローカルリーダー。あとで読む・既読・Markdown 書き出しに対応し、購読と記事は登録した URL 以外へ送りません。",
+  "icon": "rss",
+  "color": "#ea580c",
+  "tags": ["RSS", "Atom", "購読", "あとで読む", "Markdown", "プライバシー"],
+  "net": {
+    "hosts": ["cdn.jsdelivr.net"],
+    "userSupplied": ["feedUrl", "articleUrl"],
+    "note": "JS ライブラリ (jsdelivr, 版固定) と、ユーザーが登録したフィード URL・その記事 URL のみ取得する。第三者サービス・解析・テレメトリは無し。"
+  }
+}
