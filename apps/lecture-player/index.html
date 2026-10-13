@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>講義プレイヤー — Lecture Player</title>
+  <meta name="description" content="講義・録音の動画/音声を倍速再生し、字幕 (SRT/VTT) を重ね、A-B ループとタイムスタンプ付きメモで要点を残します。ファイルは送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">講義プレイヤー</h1>
+        <p class="app-subtitle">
+          講義の録画・オンライン講義のキャプチャ・ゼミの録音を、倍速で再生しながら字幕を読み、
+          気になった箇所に印を付けてノートに残せます。ファイルは端末の外へ送信されません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- ファイル選択 -->
+    <section class="panel card">
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="音声・動画ファイルを選択">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+        <p class="drop-title">ここに動画・音声をドロップ</p>
+        <p class="drop-hint">
+          複数まとめて選べます。同じフォルダの <code>.vtt</code> / <code>.srt</code> も一緒に選ぶと字幕を自動で読み込みます。
+        </p>
+        <label class="btn btn-primary file-label" for="file-input">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span>ファイルを選択</span>
+        </label>
+        <input id="file-input" type="file" multiple
+          accept="video/*,audio/*,.mp4,.webm,.mov,.m4v,.mkv,.ogg,.mp3,.m4a,.aac,.wav,.flac,.opus,.vtt,.srt" hidden />
+      </div>
+    </section>
+
+    <div id="player-section" class="layout-grid" hidden>
+
+      <!-- 左: プレイヤー -->
+      <section class="panel card player-panel">
+        <div class="video-stage">
+          <video id="video" playsinline preload="metadata"></video>
+          <div id="subtitle-overlay" class="subtitle-overlay" aria-live="polite" hidden></div>
+          <div id="audio-placeholder" class="audio-placeholder" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <p>音声のみのファイルを再生中</p>
+          </div>
+        </div>
+
+        <div class="video-controls">
+          <button id="prev-btn" class="btn btn-icon" type="button" aria-label="前のファイル" title="前のファイル (P)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button id="back-btn" class="btn btn-icon" type="button" aria-label="5 秒戻る" title="5 秒戻る (←)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <button id="play-btn" class="btn btn-icon btn-play" type="button" aria-label="再生 / 一時停止" title="再生 / 一時停止 (Space)">
+            <svg data-play-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <svg data-pause-icon xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+          </button>
+          <button id="fwd-btn" class="btn btn-icon" type="button" aria-label="5 秒進む" title="5 秒進む (→)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+          </button>
+          <button id="next-btn" class="btn btn-icon" type="button" aria-label="次のファイル" title="次のファイル (N)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <span id="time-label" class="time-label">0:00</span>
+          <input id="seek-range" class="seek-range" type="range" min="0" max="100" step="0.01" value="0" aria-label="再生位置" />
+          <span id="duration-label" class="time-label">0:00</span>
+        </div>
+
+        <div class="player-sub-controls">
+          <div class="rate-control">
+            <span class="control-label">倍速</span>
+            <input id="rate-range" type="range"
+              min="0.5" max="3" step="0.05" value="1" aria-label="再生速度" />
+            <span id="rate-value" class="badge">1x</span>
+            <button id="rate-reset-btn" class="btn btn-ghost btn-sm" type="button">1x に戻す</button>
+          </div>
+          <div id="rate-presets" class="rate-presets" role="group" aria-label="倍速プリセット"></div>
+        </div>
+
+        <div class="loop-controls">
+          <span class="control-label">A-B ループ</span>
+          <button id="set-a-btn" class="btn btn-ghost btn-sm" type="button" title="[ キー">A を現在位置に</button>
+          <button id="set-b-btn" class="btn btn-ghost btn-sm" type="button" title="] キー">B を現在位置に</button>
+          <button id="loop-toggle-btn" class="btn btn-ghost btn-sm" type="button" aria-pressed="false" disabled>ループする</button>
+          <button id="clear-loop-btn" class="btn btn-ghost btn-sm" type="button" title="\ キー">解除</button>
+          <span id="loop-info" class="hint" aria-live="polite">A / B 未設定</span>
+        </div>
+      </section>
+
+      <!-- 右: プレイリスト */}
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">プレイリスト</h2>
+          <button id="clear-all-btn" class="btn btn-ghost btn-sm" type="button">すべて消す</button>
+        </div>
+        <p id="playlist-count" class="hint"></p>
+        <ul id="playlist" class="playlist"></ul>
+        <p id="playlist-empty" class="hint empty-note">まだファイルがありません。</p>
+      </section>
+
+      <!-- 字幕 -->
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">字幕</h2>
+          <button id="clear-subtitle-btn" class="btn btn-ghost btn-sm" type="button">字幕を外す</button>
+        </div>
+        <p id="subtitle-status" class="hint" aria-live="polite">字幕は未読み込みです。</p>
+
+        <div class="subtitle-actions">
+          <label class="btn btn-ghost btn-sm file-label" for="subtitle-file-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+            <span>字幕ファイルを選ぶ</span>
+          </label>
+          <input id="subtitle-file-input" type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" hidden />
+        </div>
+
+        <label class="field" for="subtitle-paste">
+          <span>字幕テキストを貼り付け (SRT / VTT)</span>
+          <textarea id="subtitle-paste" rows="4" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:03.000&#10;こんにちは"></textarea>
+        </label>
+        <div class="action-row">
+          <button id="apply-subtitle-btn" class="btn btn-primary btn-sm" type="button">この字幕を読み込む</button>
+        </div>
+      </section>
+
+      <!-- メモ / マーカー -->
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">タイムスタンプ付きメモ</h2>
+          <span id="marker-count" class="badge">0 件</span>
+        </div>
+
+        <div class="marker-input-row">
+          <input id="marker-note" class="marker-note" type="text" placeholder="要点を入力 (空でも印だけ付けられます)" />
+          <button id="add-marker-btn" class="btn btn-primary btn-sm" type="button" title="M キー">現在位置に印を付ける</button>
+        </div>
+
+        <ul id="marker-list" class="marker-list"></ul>
+        <p id="marker-empty" class="hint empty-note">印はまだありません。</p>
+
+        <div class="action-row wrap">
+          <button id="export-notes-btn" class="btn btn-primary btn-sm" type="button">ノートを Markdown で保存</button>
+          <button id="copy-notes-btn" class="btn btn-ghost btn-sm" type="button">Markdown をコピー</button>
+          <button id="export-markers-btn" class="btn btn-ghost btn-sm" type="button">マーカーを JSON で保存</button>
+          <button id="clear-markers-btn" class="btn btn-ghost btn-sm" type="button">メモを全部消す</button>
+          <button id="screenshot-btn" class="btn btn-ghost btn-sm" type="button">現在フレームを画像で保存</button>
+        </div>
+        <p class="hint">
+          ノートはそのまま <code>notes-vault</code> に貼り付けられます。マーカーの JSON は後で読み直せます。
+        </p>
+      </section>
+    </div>
+
+    <p class="privacy-note">動画・音声・字幕はすべて端末内で処理され、サーバーへ送信されません。</p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>講義プレイヤーについて</h2>
+      <p>
+        録画・録音を開いて字幕を重ね、気になった箇所に印を付けてノートにまとめるための再生スタジオです。
+        再生も字幕の変換もノートの書き出しもブラウザ内で完結し、ファイルは送信されません。
+      </p>
+      <h3>使い方</h3>
+      <ol>
+        <li>動画・音声を選びます。同じフォルダの <code>.vtt</code> / <code>.srt</code> も一緒に選ぶと、ファイル名に応じて自動で字幕を読み込みます。</li>
+        <li>倍速スライダやプリセット、キーボードショートカットで講義を流します。</li>
+        <li>要点で「現在位置に印を付ける」を押すと、時刻とメモが残ります。</li>
+        <li>最後に「ノートを Markdown で保存」で手元に書き出します。</li>
+      </ol>
+      <h3>キーボードショートカット</h3>
+      <ul>
+        <li><code>Space</code> / <code>K</code> 再生 / 一時停止</li>
+        <li><code>←</code> <code>→</code> 5 秒、<code>J</code> <code>L</code> 10 秒</li>
+        <li><code>↑</code> <code>↓</code> 倍速を上げる / 下げる</li>
+        <li><code>M</code> マーカー追加、<code>[</code> A 設定、<code>]</code> B 設定、<code>\</code> 解除</li>
+        <li><code>P</code> / <code>N</code> 前 / 次のファイル</li>
+      </ul>
+      <h3>字幕の形式</h3>
+      <p>
+        SRT は読み込み時に WebVTT へ変換します。字幕は <code>&lt;track&gt;</code> として登録し、
+        読みやすいよう独自のオーバーレイへ描画します。
+      </p>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="講義プレイヤー"
+    data-app-icon="graduation-cap"
+    data-app-color="#6366f1"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
