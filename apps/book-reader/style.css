@@ -1,0 +1,690 @@
+/* ==========================================================
+   Book Reader — style.css
+   共通トークン (shared/base.css) を参照する。
+   ========================================================== */
+
+:root {
+  --app-color: #0d9488;
+  --hl-color: #f6e05e;
+}
+
+/* --- Layout --- */
+.app-main {
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-5) var(--sp-10);
+}
+
+.app-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.app-subtitle {
+  margin-top: var(--sp-2);
+  color: var(--c-text-2);
+  max-width: 60ch;
+}
+
+/* ==========================================================
+   本棚
+   ========================================================== */
+.library-head {
+  margin-bottom: var(--sp-6);
+}
+
+.drop-zone {
+  display: block;
+  width: 100%;
+  padding: var(--sp-10) var(--sp-5);
+  border: 2px dashed var(--c-border-strong);
+  border-radius: var(--r-xl);
+  background: var(--c-surface-card);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration), background var(--duration), transform var(--duration);
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible,
+.drop-zone.dragging {
+  border-color: var(--app-color);
+  background: var(--c-surface-hover);
+  outline: none;
+}
+
+.drop-zone.dragging {
+  transform: scale(1.01);
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  color: var(--c-text-2);
+}
+
+.drop-zone-content svg {
+  color: var(--app-color);
+}
+
+.drop-zone-text {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.drop-zone-hint {
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+}
+
+.btn-file,
+.btn-secondary,
+.btn-primary {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: var(--text-base);
+  padding: var(--sp-2) var(--sp-5);
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+}
+
+.btn-file,
+.btn-primary {
+  background: var(--app-color);
+  color: #fff;
+}
+
+.btn-file:hover,
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn-secondary {
+  background: var(--c-surface-solid);
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+.btn-secondary:hover {
+  background: var(--c-surface-hover);
+}
+
+.btn-sm {
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--text-sm);
+}
+
+.btn-text {
+  border: none;
+  background: none;
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-text:hover {
+  color: var(--c-error);
+}
+
+.drop-zone-note {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+}
+
+.drop-zone-note code,
+.privacy-note code {
+  font-family: var(--font-mono);
+  background: var(--c-surface-alt);
+  padding: 0 4px;
+  border-radius: var(--r-sm);
+}
+
+.recent {
+  margin-top: var(--sp-8);
+}
+
+.recent-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.recent-list {
+  list-style: none;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--c-surface-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.recent-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  color: var(--c-text);
+  padding: var(--sp-1);
+  border-radius: var(--r);
+}
+
+.recent-open:hover {
+  background: var(--c-surface-hover);
+}
+
+.recent-title {
+  font-weight: 600;
+}
+
+.recent-meta {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+}
+
+.recent-remove {
+  border: none;
+  background: none;
+  color: var(--c-text-3);
+  cursor: pointer;
+  font-size: var(--text-lg);
+  line-height: 1;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r);
+}
+
+.recent-remove:hover {
+  color: var(--c-error);
+  background: var(--c-surface-alt);
+}
+
+.privacy-note {
+  margin-top: var(--sp-8);
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+  border-top: 1px solid var(--c-border);
+  padding-top: var(--sp-4);
+}
+
+/* ==========================================================
+   リーダー
+   ========================================================== */
+.reader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  height: calc(100vh - 120px);
+  min-height: 480px;
+}
+
+.reader-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.btn-icon,
+.btn-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface-solid);
+  color: var(--c-text);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.btn-icon:hover,
+.btn-icon-text:hover {
+  background: var(--c-surface-hover);
+}
+
+.btn-icon:focus-visible,
+.btn-icon-text:focus-visible,
+.btn-secondary:focus-visible,
+.btn-file:focus-visible,
+.theme-chip:focus-visible,
+.btn-text:focus-visible {
+  outline: 2px solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+
+.btn-icon:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.reader-title-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-title {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-meta {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-toolbar-actions {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.reader-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--c-surface-alt);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--app-color);
+  border-radius: var(--r-full);
+  transition: width var(--duration-slow) var(--ease-default);
+}
+
+.progress-label {
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  font-variant-numeric: tabular-nums;
+  min-width: 3em;
+  text-align: right;
+}
+
+.reader-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--sp-3);
+}
+
+.reader-content {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-solid);
+  overflow: hidden;
+}
+
+.epub-host {
+  position: absolute;
+  inset: 0;
+}
+
+.epub-host foliate-view {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cbz-host {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: var(--c-surface-alt);
+}
+
+.cbz-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* 本文テーマ (本の地色) — アプリのテーマとは独立 */
+.reader-content[data-reader-theme='sepia'],
+.cbz-host[data-reader-theme='sepia'] {
+  background: #f8f1e3;
+}
+
+.reader-content[data-reader-theme='dark'] {
+  background: #15171c;
+}
+
+.cbz-host[data-reader-theme='dark'] {
+  background: #0c0d10;
+}
+
+.reader-side {
+  width: 260px;
+  flex: 0 0 260px;
+  overflow-y: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-card);
+  padding: var(--sp-3);
+}
+
+.side-title {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text-3);
+  margin-bottom: var(--sp-2);
+}
+
+.toc-list,
+.marks-list {
+  list-style: none;
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.toc-link,
+.mark-go {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--c-text);
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.toc-link {
+  padding-left: calc(var(--sp-2) + var(--depth, 0) * 14px);
+}
+
+.toc-link:hover,
+.mark-go:hover {
+  background: var(--c-surface-hover);
+}
+
+.toc-link.active {
+  color: var(--app-color);
+  font-weight: 700;
+}
+
+.mark-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-1);
+}
+
+.mark-highlight .mark-go {
+  color: var(--c-text-2);
+}
+
+.mark-remove {
+  border: none;
+  background: none;
+  color: var(--c-text-3);
+  cursor: pointer;
+  font-size: var(--text-base);
+  padding: 0 var(--sp-1);
+  line-height: 1.6;
+}
+
+.mark-remove:hover {
+  color: var(--c-error);
+}
+
+.mark-empty {
+  color: var(--c-text-3);
+  font-size: var(--text-sm);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.reader-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.page-label {
+  min-width: 8em;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.reader-controls .btn-secondary:last-child {
+  margin-left: auto;
+}
+
+/* 選択時のフローティングボタン */
+.selection-action {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  z-index: 5;
+  border: none;
+  background: var(--app-color);
+  color: #fff;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+}
+
+/* 設定ポップオーバー */
+.settings-popover {
+  position: absolute;
+  top: 64px;
+  right: var(--sp-5);
+  z-index: 20;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+  padding: var(--sp-4);
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 6.5em 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.settings-label {
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+}
+
+.settings-value {
+  font-size: var(--text-sm);
+  color: var(--c-text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5em;
+  text-align: right;
+}
+
+.settings-row:first-child {
+  grid-template-columns: 6.5em 1fr;
+}
+
+.settings-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--app-color);
+}
+
+.settings-row select {
+  grid-column: 2 / 4;
+  font-family: var(--font);
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r);
+  padding: var(--sp-1) var(--sp-2);
+}
+
+.theme-buttons {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.theme-chip {
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface-solid);
+  color: var(--c-text);
+  border-radius: var(--r);
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.theme-chip.active {
+  border-color: var(--app-color);
+  color: var(--app-color);
+  font-weight: 700;
+}
+
+/* ローディング */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  background: color-mix(in srgb, var(--c-surface-solid) 88%, transparent);
+  color: var(--c-text-2);
+  font-size: var(--text-sm);
+}
+
+.loading-overlay[hidden] {
+  display: none;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--c-border-strong);
+  border-top-color: var(--app-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* トースト */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--sp-6);
+  transform: translate(-50%, 20px);
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration), transform var(--duration);
+  z-index: 100;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast.error {
+  background: var(--c-error);
+}
+
+/* レスポンシブ */
+@media (max-width: 720px) {
+  .reader {
+    height: calc(100vh - 100px);
+  }
+
+  .reader-stage {
+    position: relative;
+  }
+
+  .reader-side {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 15;
+    width: min(300px, 85vw);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .settings-popover {
+    right: var(--sp-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill,
+  .toast,
+  .drop-zone {
+    transition: none;
+  }
+
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}

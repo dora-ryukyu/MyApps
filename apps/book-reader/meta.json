@@ -1,0 +1,10 @@
+{
+  "id": "book-reader",
+  "name": "Book Reader",
+  "description": "EPUB / CBZ をブラウザ内で読む電子書籍リーダー。目次・しおり・ハイライト・読書位置の保存に対応。ファイルは送信しません。",
+  "icon": "book-open",
+  "color": "#0d9488",
+  "net": "none",
+  "netDescription": "送信なし (すべてブラウザ内で処理し、外部へ送りません)",
+  "tags": ["読書", "電子書籍", "EPUB", "CBZ", "ツール"]
+}
