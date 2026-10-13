@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF 注釈スタジオ — MyApps</title>
+  <meta name="description" content="PDF にハイライト・注記・手書き署名を重ね、ページを整理して書き出す。すべて端末内で処理し送信しません。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- PDF 描画 (pdf.js 3.11.174, 版固定 + SRI) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"
+    integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+    crossorigin="anonymous"></script>
+
+  <!-- PDF 書き出し (pdf-lib 1.17.1, pdf-toolkit と同じ版 + SRI) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+    integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"
+    crossorigin="anonymous"></script>
+
+  <script>
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+  </script>
+</head>
+
+<body>
+  <main class="app-main">
+    <!-- 読み込み前 -->
+    <section class="intro" id="intro">
+      <div class="intro-copy">
+        <h1 class="intro-title">PDF 注釈スタジオ</h1>
+        <p class="intro-lead">
+          既存の PDF にハイライト・下線・図形・手書き・テキスト注記・付箋・<strong>手書き署名</strong>を重ね、
+          ページの回転・削除・並べ替え・白紙挿入・抽出ができます。書き出しは「注釈を焼き込んだ PDF」と
+          「注釈データを保持した PDF」の両方に対応。ファイルは端末の外へ送信しません。
+        </p>
+      </div>
+      <input type="file" id="file-input" accept="application/pdf,.pdf" hidden />
+      <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="PDF を選択">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" x2="12" y1="3" y2="15" />
+        </svg>
+        <p class="drop-title">PDF をドラッグ＆ドロップ</p>
+        <p class="drop-hint">または</p>
+        <button class="btn btn-primary" id="pick-btn" type="button">PDF を選択</button>
+        <p class="drop-note">注釈データ (<code>.json</code>) だけを読み込む場合は
+          <button class="link-btn" id="load-annotations-intro" type="button">こちら</button>
+        </p>
+      </div>
+      <input type="file" id="annotations-input" accept="application/json,.json" hidden />
+    </section>
+
+    <!-- 編集画面 -->
+    <section class="workspace" id="workspace" hidden>
+      <div class="file-bar">
+        <div class="file-info">
+          <span class="file-name" id="file-name"></span>
+          <span class="file-meta" id="file-meta"></span>
+        </div>
+        <div class="file-actions">
+          <button class="btn btn-ghost btn-sm" id="open-annotations" type="button">注釈を読み込む</button>
+          <button class="btn btn-ghost btn-sm" id="save-annotations" type="button">注釈を保存</button>
+          <button class="btn btn-ghost btn-sm" id="close-file" type="button">閉じる</button>
+        </div>
+      </div>
+
+      <div class="toolbar" id="toolbar" role="toolbar" aria-label="注釈ツール">
+        <button class="tool" data-tool="select" type="button" title="選択・移動 (V)">選択</button>
+        <button class="tool" data-tool="highlight" type="button" title="ハイライト (H)">ハイライト</button>
+        <button class="tool" data-tool="underline" type="button" title="下線 (U)">下線</button>
+        <button class="tool" data-tool="strikeout" type="button" title="取り消し線 (S)">取消線</button>
+        <button class="tool" data-tool="texthighlight" type="button" title="文字列選択でハイライト (T)">文字選択</button>
+        <button class="tool" data-tool="rect" type="button" title="矩形">矩形</button>
+        <button class="tool" data-tool="ellipse" type="button" title="楕円">楕円</button>
+        <button class="tool" data-tool="ink" type="button" title="手書き (P)">手書き</button>
+        <button class="tool" data-tool="text" type="button" title="テキスト">テキスト</button>
+        <button class="tool" data-tool="note" type="button" title="付箋">付箋</button>
+        <button class="tool" data-tool="signature" type="button" title="署名">署名</button>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <label class="color-field" title="色">
+          <input type="color" id="color-input" value="#facc15" aria-label="注釈の色" />
+        </label>
+        <button class="tool tool-danger" data-tool="eraser" type="button" title="消しゴム (E)">消しゴム</button>
+        <span class="tool-sep" aria-hidden="true"></span>
+        <button class="btn btn-ghost btn-sm" id="undo-btn" type="button" title="元に戻す">元に戻す</button>
+        <button class="btn btn-ghost btn-sm" id="delete-annotation" type="button" title="選択した注釈を削除">注釈を削除</button>
+      </div>
+
+      <div class="editor-layout">
+        <div class="rail-column">
+          <div class="rail-head">
+            <button class="link-btn" id="rail-select-all" type="button">全選択</button>
+            <button class="link-btn" id="rail-select-none" type="button">解除</button>
+          </div>
+          <aside class="page-rail" id="page-thumb-list" aria-label="ページ一覧"></aside>
+        </div>
+        <div class="stage-column">
+          <div class="stage-bar">
+            <div class="stage-bar-group">
+              <button class="btn btn-ghost btn-sm" id="zoom-out" type="button" aria-label="縮小">−</button>
+              <span class="zoom-label" id="zoom-label">100%</span>
+              <button class="btn btn-ghost btn-sm" id="zoom-in" type="button" aria-label="拡大">＋</button>
+            </div>
+            <div class="stage-bar-group">
+              <button class="btn btn-ghost btn-sm" id="prev-page" type="button">前へ</button>
+              <span class="page-indicator" id="page-indicator">1 / 1</span>
+              <button class="btn btn-ghost btn-sm" id="next-page" type="button">次へ</button>
+            </div>
+            <div class="stage-bar-group">
+              <label class="check-field">
+                <input type="checkbox" id="text-layer-toggle" checked />
+                文字選択を有効化
+              </label>
+            </div>
+          </div>
+          <div class="stage" id="stage">
+            <div class="page-shell" id="page-shell">
+              <canvas id="pdf-canvas"></canvas>
+              <div class="text-layer" id="text-layer"></div>
+              <canvas id="overlay-canvas"></canvas>
+            </div>
+          </div>
+          <p class="stage-hint" id="stage-hint"></p>
+        </div>
+      </div>
+
+      <div class="export-bar" id="export-bar">
+        <div class="export-summary" id="export-summary"></div>
+        <div class="export-actions">
+          <button class="btn btn-ghost" id="export-extract" type="button">選択ページだけ抽出</button>
+          <button class="btn btn-secondary" id="export-layer" type="button">注釈データ付き PDF を書き出す</button>
+          <button class="btn btn-secondary" id="export-json" type="button">注釈 JSON を書き出す</button>
+          <button class="btn btn-primary" id="export-flat" type="button">注釈を焼き込んで書き出す</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <!-- 署名パッド -->
+  <div class="modal-overlay" id="signature-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signature-title">
+      <h2 class="modal-title" id="signature-title">手書き署名</h2>
+      <p class="modal-desc">枠内に署名を描いて「配置」を押すと、選択中のツールで任意の位置に置けます。法的な電子署名の真正性を保証するものではありません。</p>
+      <canvas id="signature-pad" class="signature-pad" width="520" height="180"></canvas>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="signature-clear" type="button">消す</button>
+        <button class="btn btn-ghost" id="signature-cancel" type="button">キャンセル</button>
+        <button class="btn btn-primary" id="signature-apply" type="button">配置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- テキスト入力 -->
+  <div class="modal-overlay" id="text-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="text-title">
+      <h2 class="modal-title" id="text-title">テキスト</h2>
+      <textarea id="text-input" class="text-input" rows="4" placeholder="注記を入力"></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="text-cancel" type="button">キャンセル</button>
+        <button class="btn btn-primary" id="text-apply" type="button">配置</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../shared/header.js" data-app-name="PDF 注釈スタジオ" data-app-icon="file-pen"
+    data-app-color="#7c3aed"></script>
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>

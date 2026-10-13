@@ -1,0 +1,14 @@
+{
+  "id": "pdf-annotate",
+  "name": "PDF 注釈スタジオ",
+  "description": "既存の PDF にハイライト・下線・図形・手書き・テキスト注記・付箋・手書き署名を重ね、ページの回転/削除/並べ替え/白紙挿入/抽出をする。注釈を焼き込んだ PDF と、注釈データを保持した PDF を書き出します。ファイルは送信しません。",
+  "icon": "file-pen",
+  "color": "#7c3aed",
+  "net": {
+    "hosts": ["cdn.jsdelivr.net"],
+    "userSupplied": [],
+    "sendsData": false,
+    "note": "pdf.js 3.11.174 と pdf-lib 1.17.1 を SRI + 版固定で cdn.jsdelivr.net から読み込むのみ。開いた PDF・注釈・署名はすべて端末内で処理し、外部へ送信しない。"
+  },
+  "tags": ["ツール", "PDF", "注釈", "署名", "書類"]
+}
