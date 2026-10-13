@@ -1,0 +1,14 @@
+{
+  "id": "image-batch",
+  "name": "画像一括変換",
+  "description": "複数の画像をまとめてリサイズ・形式変換（JPEG / WebP / AVIF / PNG）・透かし・EXIF削除・連番リネームし、ZIP で一括書き出します。画像は送信しません。",
+  "icon": "images",
+  "color": "#0e7490",
+  "net": {
+    "hosts": ["cdnjs.cloudflare.com"],
+    "userSupplied": [],
+    "sendsData": false,
+    "note": "JSZip 3.10.1 を SRI + 版固定で cdnjs.cloudflare.com から読み込むのみ。読み込んだ画像・透かし・出力はすべて端末内 (Web Worker + OffscreenCanvas) で処理し、外部へ送信しない。"
+  },
+  "tags": ["画像", "一括", "変換", "リサイズ", "ツール"]
+}
