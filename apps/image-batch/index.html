@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像一括変換 — Image Batch</title>
+  <meta name="description" content="複数の画像をまとめてリサイズ・形式変換（JPEG / WebP / AVIF / PNG）・透かし・EXIF削除・連番リネームし、ZIP で一括書き出します。画像は送信しません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+
+  <!-- JSZip 3.10.1 (SRI + 版固定) -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+    integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">画像一括変換</h1>
+        <p class="app-subtitle">
+          複数の画像をまとめてリサイズ・形式変換・透かし・EXIF削除・連番リネームし、
+          ZIP で一括ダウンロードします。画像は端末の外へ送信されません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- 画像の選択 -->
+    <section id="drop-section" class="panel card">
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="画像を選択">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>
+        <p class="drop-title">ここに画像をドロップ</p>
+        <p class="drop-hint">またはボタンで選択（JPEG / PNG / WebP / AVIF / GIF / BMP など）。複数まとめて選べます。</p>
+        <label class="btn btn-primary file-label" for="file-input">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span>画像を選択</span>
+        </label>
+        <input id="file-input" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp" multiple hidden />
+      </div>
+    </section>
+
+    <!-- 一覧と設定 -->
+    <div id="editor-section" class="layout-grid" hidden>
+
+      <section class="panel card">
+        <div class="panel-head">
+          <h2 class="panel-title">画像一覧 <span id="file-count" class="badge">0</span></h2>
+          <button id="clear-btn" class="btn btn-ghost btn-sm" type="button">クリア</button>
+        </div>
+        <ul id="file-list" class="file-grid"></ul>
+      </section>
+
+      <section class="panel card settings-panel">
+        <h2 class="panel-title">一括設定</h2>
+
+        <div class="field-group">
+          <label class="field" for="resize-mode">
+            <span>リサイズ</span>
+            <select id="resize-mode" class="select-input">
+              <option value="none">サイズ変更なし</option>
+              <option value="long" selected>長辺を合わせる</option>
+              <option value="short">短辺を合わせる</option>
+              <option value="percent">% で拡大縮小</option>
+            </select>
+          </label>
+          <label class="field" for="resize-value">
+            <span id="resize-value-label">長辺 (px)</span>
+            <input id="resize-value" type="number" min="1" max="30000" step="1" value="1920" inputmode="numeric" />
+          </label>
+        </div>
+        <p id="resize-hint" class="hint">拡大はしません（元より小さい画像はそのまま）。</p>
+
+        <label class="field" for="format-select">
+          <span>出力形式</span>
+          <select id="format-select" class="select-input">
+            <option value="keep">元の形式を保つ</option>
+            <option value="jpeg">JPEG</option>
+            <option value="webp" selected>WebP</option>
+            <option value="avif">AVIF</option>
+            <option value="png">PNG（可逆）</option>
+          </select>
+        </label>
+
+        <div class="field">
+          <div class="field-head">
+            <span>品質</span>
+            <span id="quality-value" class="badge">85</span>
+          </div>
+          <input id="quality-range" type="range" min="10" max="100" step="1" value="85" />
+        </div>
+
+        <label class="check-field">
+          <input id="watermark-check" type="checkbox" />
+          <span>透かしを入れる</span>
+        </label>
+
+        <div id="watermark-fields" class="sub-fields" hidden>
+          <label class="field" for="watermark-text">
+            <span>透かしテキスト</span>
+            <input id="watermark-text" type="text" value="© MyApps" maxlength="80" />
+          </label>
+          <label class="field" for="watermark-image">
+            <span>または画像の透かし（任意）</span>
+            <input id="watermark-image" type="file" accept="image/*" />
+          </label>
+          <label class="field" for="watermark-position">
+            <span>位置</span>
+            <select id="watermark-position" class="select-input">
+              <option value="bottom-right" selected>右下</option>
+              <option value="bottom-left">左下</option>
+              <option value="top-right">右上</option>
+              <option value="top-left">左上</option>
+              <option value="center">中央</option>
+            </select>
+          </label>
+          <div class="field">
+            <div class="field-head">
+              <span>サイズ（短辺の %）</span>
+              <span id="watermark-scale-value" class="badge">8</span>
+            </div>
+            <input id="watermark-scale" type="range" min="2" max="40" step="1" value="8" />
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <span>不透明度</span>
+              <span id="watermark-opacity-value" class="badge">60</span>
+            </div>
+            <input id="watermark-opacity" type="range" min="10" max="100" step="1" value="60" />
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <span>回転</span>
+              <span id="watermark-rotation-value" class="badge">0°</span>
+            </div>
+            <input id="watermark-rotation" type="range" min="-45" max="45" step="1" value="0" />
+          </div>
+        </div>
+
+        <label class="check-field">
+          <input id="strip-metadata-check" type="checkbox" checked />
+          <span>EXIF / 位置情報などのメタデータを削除</span>
+        </label>
+
+        <div class="field-group">
+          <label class="field" for="rename-mode">
+            <span>ファイル名</span>
+            <select id="rename-mode" class="select-input">
+              <option value="sequence" selected>連番にリネーム</option>
+              <option value="keep">元の名前を保つ</option>
+            </select>
+          </label>
+          <label class="field" for="rename-prefix">
+            <span>接頭辞</span>
+            <input id="rename-prefix" type="text" value="image" maxlength="60" />
+          </label>
+        </div>
+        <div class="field-group">
+          <label class="field" for="rename-start">
+            <span>開始番号</span>
+            <input id="rename-start" type="number" min="0" step="1" value="1" inputmode="numeric" />
+          </label>
+          <label class="field" for="rename-pad">
+            <span>ゼロ埋め桁数</span>
+            <input id="rename-pad" type="number" min="0" max="8" step="1" value="3" inputmode="numeric" />
+          </label>
+        </div>
+
+        <div class="action-row">
+          <button id="process-btn" class="btn btn-primary" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span>一括処理して書き出す</span>
+          </button>
+          <button id="cancel-btn" class="btn btn-ghost" type="button" hidden>キャンセル</button>
+        </div>
+
+        <div id="progress-wrap" class="progress-block" hidden>
+          <div class="progress-track"><div id="progress-bar" class="progress-fill"></div></div>
+          <p id="progress-label" class="hint" aria-live="polite">準備中…</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- 結果 -->
+    <section id="result-section" class="panel card" hidden>
+      <h2 class="panel-title">結果</h2>
+      <p id="result-summary" class="result-summary"></p>
+      <div class="action-row">
+        <button id="download-btn" class="btn btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <span id="download-label">ダウンロード</span>
+        </button>
+      </div>
+      <p id="result-note" class="hint"></p>
+    </section>
+
+    <p class="privacy-note">画像はすべて端末内（Web Worker + OffscreenCanvas）で処理され、サーバーへ送信されません。</p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>画像一括変換について</h2>
+      <p>
+        たくさんの写真をまとめて「縮小して形式を揃えて軽くする」ためのツールです。
+        読み込んだ画像・透かし・出力はすべてブラウザ内で処理され、サーバーへ送信されません。
+      </p>
+      <h3>できること</h3>
+      <ul>
+        <li>長辺 / 短辺 / % での一括リサイズ（拡大はしません）</li>
+        <li>JPEG / WebP / AVIF / PNG への一括形式変換と品質調整</li>
+        <li>テキストまたは画像の透かし（位置・サイズ・不透明度・回転）</li>
+        <li>EXIF / 位置情報などのメタデータ削除</li>
+        <li>連番リネーム（接頭辞 + 開始番号 + ゼロ埋め）と名前の衝突回避</li>
+        <li>結果を ZIP で一括ダウンロード（1 枚だけならそのまま）</li>
+      </ul>
+      <h3>しくみ</h3>
+      <ol>
+        <li>選択した画像を 1 枚ずつ Web Worker へ渡し、<code>createImageBitmap</code> でデコード</li>
+        <li><code>OffscreenCanvas</code> に描画してリサイズ・透かしを適用</li>
+        <li>指定形式へエンコード（非対応形式は自動でフォールバック）</li>
+        <li>JSZip でまとめて ZIP にし、ブラウザからダウンロード</li>
+      </ol>
+      <h3>注意</h3>
+      <ul>
+        <li>AVIF / WebP のエンコードはブラウザ依存です。非対応の環境では JPEG などへ自動で切り替わります。</li>
+        <li>GIF / BMP などは「元の形式を保つ」を選んでも PNG へ変換されます（静止画として読み込みます）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="画像一括変換"
+    data-app-icon="images"
+    data-app-color="#0e7490"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
