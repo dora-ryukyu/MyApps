@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSS リーダー — Feed Reader</title>
+  <meta name="description" content="RSS/Atom を購読して本文だけを読むローカルリーダー。あとで読む・既読・Markdown 書き出しに対応し、購読と記事は登録した URL 以外へ送りません。">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザインの読み込み -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+
+  <main class="app-container">
+
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">RSS リーダー</h1>
+        <p class="app-subtitle">
+          フィードを購読し、記事の本文だけを抽出して読みます。購読・既読・あとで読むは
+          ブラウザ内に保存され、登録した URL 以外へは送信しません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <div class="layout">
+
+      <!-- サイドバー: 購読とフィルタ -->
+      <aside class="sidebar">
+        <section class="panel card">
+          <h2 class="panel-title">フィードを追加</h2>
+          <form id="add-feed-form" class="add-feed" autocomplete="off">
+            <label class="sr-only" for="feed-url-input">フィードまたはサイトの URL</label>
+            <input id="feed-url-input" type="url" inputmode="url" placeholder="https://example.com/feed.xml" />
+            <button id="add-feed-btn" class="btn btn-primary btn-sm" type="submit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              <span>購読</span>
+            </button>
+          </form>
+          <p id="feed-status" class="hint" aria-live="polite"></p>
+        </section>
+
+        <section class="panel card">
+          <div class="panel-head">
+            <h2 class="panel-title">フィルタ</h2>
+            <button id="refresh-all-btn" class="btn btn-ghost btn-sm" type="button">全て更新</button>
+          </div>
+          <nav class="filter-nav" aria-label="記事の絞り込み">
+            <button id="filter-all" class="filter-btn is-active" type="button" data-filter="all">
+              <span>すべて</span><span id="count-all" class="count">0</span>
+            </button>
+            <button id="filter-unread" class="filter-btn" type="button" data-filter="unread">
+              <span>未読</span><span id="count-unread" class="count">0</span>
+            </button>
+            <button id="filter-readlater" class="filter-btn" type="button" data-filter="readlater">
+              <span>あとで読む</span><span id="count-readlater" class="count">0</span>
+            </button>
+          </nav>
+        </section>
+
+        <section class="panel card">
+          <h2 class="panel-title">購読中</h2>
+          <ul id="feed-list" class="feed-list"></ul>
+          <p id="feed-empty" class="hint">まだフィードがありません。</p>
+        </section>
+
+        <section class="panel card">
+          <h2 class="panel-title">OPML</h2>
+          <div class="opml-actions">
+            <label id="import-opml-label" class="btn btn-ghost btn-sm file-label" for="import-opml-input">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+              <span>取り込み</span>
+            </label>
+            <input id="import-opml-input" type="file" accept=".opml,.xml,text/x-opml,text/xml" hidden />
+            <button id="export-opml-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>書き出し</span>
+            </button>
+          </div>
+          <p id="storage-info" class="hint" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <!-- メイン: 記事一覧 -->
+      <section class="content">
+        <div id="list-view" class="panel card">
+          <div class="panel-head">
+            <div>
+              <h2 id="list-title" class="panel-title">すべての記事</h2>
+              <p id="list-meta" class="hint"></p>
+            </div>
+            <div class="list-tools">
+              <label class="sr-only" for="search-input">記事を検索</label>
+              <input id="search-input" type="search" placeholder="検索…" />
+              <button id="mark-all-read-btn" class="btn btn-ghost btn-sm" type="button">全て既読</button>
+            </div>
+          </div>
+          <ul id="article-list" class="article-list"></ul>
+          <div id="list-empty" class="empty-state" hidden>
+            <p>表示する記事がありません。フィードを追加するか「全て更新」を押してください。</p>
+          </div>
+        </div>
+
+        <!-- リーダービュー -->
+        <article id="reader-view" class="panel card reader" hidden>
+          <div class="reader-toolbar">
+            <button id="back-btn" class="btn btn-ghost btn-sm" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+              <span>一覧へ</span>
+            </button>
+            <span id="reader-feed" class="reader-feed"></span>
+            <span id="reader-date" class="reader-date"></span>
+            <div class="reader-actions">
+              <button id="reader-readlater-btn" class="btn btn-ghost btn-sm" type="button">あとで読む</button>
+              <button id="reader-mark-btn" class="btn btn-ghost btn-sm" type="button">未読に戻す</button>
+              <button id="toggle-md-btn" class="btn btn-ghost btn-sm" type="button">Markdown</button>
+              <button id="copy-md-btn" class="btn btn-ghost btn-sm" type="button">コピー</button>
+              <button id="download-md-btn" class="btn btn-ghost btn-sm" type="button">.md 保存</button>
+              <button id="clip-btn" class="btn btn-ghost btn-sm" type="button">notes-vault へ</button>
+              <a id="open-original-btn" class="btn btn-ghost btn-sm" href="#" target="_blank" rel="noopener noreferrer">元記事</a>
+            </div>
+          </div>
+
+          <h1 id="reader-title" class="reader-title"></h1>
+          <p id="reader-byline" class="reader-byline"></p>
+          <p id="reader-status" class="hint" aria-live="polite"></p>
+
+          <div id="reader-error" class="error-box" role="alert" hidden>
+            <span id="reader-error-text"></span>
+            <button id="reader-retry-btn" class="btn btn-ghost btn-sm" type="button">再取得</button>
+          </div>
+
+          <div id="reader-loading" class="reader-loading" hidden>本文を取得しています…</div>
+          <div id="reader-body" class="reader-body" tabindex="0"></div>
+          <textarea id="reader-md" class="reader-md" readonly hidden></textarea>
+          <p id="reader-source" class="hint"></p>
+        </article>
+      </section>
+    </div>
+
+    <p class="privacy-note">
+      購読と読書の状態はこのブラウザに保存されます。取得するのは登録したフィード URL と
+      その記事 URL だけで、第三者サービスや解析は使いません。
+    </p>
+  </main>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>RSS リーダーについて</h2>
+      <p>
+        RSS / Atom フィードを購読し、記事の本文だけを抽出して読むためのローカルアプリです。
+        購読リスト・既読・あとで読むは localStorage に保存され、サーバーへは送信しません。
+      </p>
+      <h3>使い方</h3>
+      <ol>
+        <li>フィードまたはサイトの URL を入力して「購読」を押します (サイト URL ならフィードを自動検出します)。</li>
+        <li>「全て更新」で新着を取得し、記事を選ぶと本文ビューが開きます。</li>
+        <li>「Markdown」で本文を Markdown 表示し、「.md 保存」または「notes-vault へ」で手元に残せます。</li>
+        <li>OPML の取り込み / 書き出しで購読リストを移行できます。</li>
+      </ol>
+      <h3>注意</h3>
+      <ul>
+        <li>配信側が CORS を許可していないフィードは取得できません。その場合はエラーとして表示します (プロキシは使いません)。</li>
+        <li>本文抽出は <code>@mozilla/readability</code>、Markdown 化は <code>turndown</code> を使い、読み込めない場合は内蔵の簡易抽出にフォールバックします。</li>
+        <li>読み込み済みライブラリ: jsdelivr の版固定 CDN のみ。記事の内容はどこにも送信しません。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 共通ヘッダー読み込み -->
+  <script
+    src="../../shared/header.js"
+    data-app-name="RSS リーダー"
+    data-app-icon="rss"
+    data-app-color="#ea580c"
+  ></script>
+
+  <!-- アプリのメインロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
