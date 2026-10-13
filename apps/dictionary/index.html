@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>オフライン辞書 — MyApps</title>
+  <meta name="description" content="英和・和英・国語（JMdict）と漢字（Kanjidic）を引くオフライン辞書。ローマ字入力・前方一致・単語帳連携。初回のみ取得、以後送信なし。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+  </script>
+</head>
+<body>
+  <main class="app-main">
+    <!-- ============ ヒーロー ============ -->
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Offline Dictionary</p>
+        <h1>オフライン辞書</h1>
+        <p class="lead">
+          英和・和英・国語（JMdict）と漢字（Kanjidic）を端末内で引きます。
+          初回だけ辞書データを取得し、以後は<strong>オフライン・送信なし</strong>。
+          検索した語は単語帳・ノートへ送れます。
+        </p>
+      </div>
+      <div class="hero-pills" aria-hidden="true">
+        <span>JMdict</span>
+        <span>Kanjidic</span>
+        <span>ローマ字入力</span>
+        <span>オフライン</span>
+      </div>
+    </header>
+
+    <!-- ============ データ準備 ============ -->
+    <section id="data-panel" class="panel data-panel">
+      <div class="panel-head">
+        <div>
+          <h2>辞書データ</h2>
+          <p class="panel-sub" id="data-status">未取得です。下のボタンで取得するか、ファイルを取り込んでください。</p>
+        </div>
+        <span id="data-badge" class="badge badge-missing">未取得</span>
+      </div>
+
+      <div class="pack-row" role="radiogroup" aria-label="辞書データの種類">
+        <label class="pack-option">
+          <input type="radio" name="pack" value="standard" checked />
+          <span class="pack-name">標準（常用語）</span>
+          <span class="pack-size">約 1.4 MB</span>
+        </label>
+        <label class="pack-option">
+          <input type="radio" name="pack" value="full" />
+          <span class="pack-name">完全（全項目）</span>
+          <span class="pack-size">約 11 MB</span>
+        </label>
+      </div>
+
+      <div class="data-actions">
+        <button id="download-btn" type="button" class="btn btn-primary">辞書データを取得</button>
+        <button id="import-btn" type="button" class="btn btn-secondary">ファイルを取り込む</button>
+        <button id="clear-btn" type="button" class="btn btn-ghost btn-sm" hidden>保存済みデータを削除</button>
+      </div>
+      <input id="file-input" type="file" accept=".tgz,.gz,.json,application/gzip,application/json" multiple hidden />
+
+      <div id="data-progress" class="progress" hidden>
+        <div class="progress-bar"><span id="progress-fill"></span></div>
+        <p id="progress-text" class="progress-text"></p>
+      </div>
+
+      <div id="data-error" class="error-box" role="alert" hidden></div>
+
+      <p class="hint">
+        自動取得は GitHub の release から行います。配布アセットは CORS ヘッダを返さないため、
+        環境によってはブラウザにブロックされます。その場合は
+        <a href="https://github.com/scriptin/jmdict-simplified/releases" target="_blank" rel="noopener noreferrer">配布ページ</a>
+        から <code>jmdict-*.json.tgz</code> と <code>kanjidic2-en-*.json.tgz</code> を保存し、
+        「ファイルを取り込む」から選んでください。取り込んだデータは端末内にのみ保存されます。
+      </p>
+    </section>
+
+    <!-- ============ 検索 ============ -->
+    <section id="search-panel" class="panel search-panel" hidden>
+      <div class="mode-tabs" role="tablist" aria-label="検索モード">
+        <button type="button" class="mode-tab active" data-mode="ja" role="tab" aria-selected="true">日本語</button>
+        <button type="button" class="mode-tab" data-mode="en" role="tab" aria-selected="false">英語</button>
+        <button type="button" class="mode-tab" data-mode="kanji" role="tab" aria-selected="false">漢字</button>
+      </div>
+      <p class="mode-hint" id="mode-hint">見出し・読み・ローマ字で引きます（国語＝読みと品詞、和英＝語義は英語）。</p>
+
+      <div class="search-wrap">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search-input" type="search" placeholder="例: nihon / にほん / 日本 / school" autocomplete="off" spellcheck="false" />
+      </div>
+      <p id="romaji-hint" class="romaji-hint" hidden></p>
+
+      <div class="result-head">
+        <span id="result-count" class="result-count"></span>
+        <button id="copy-all-btn" type="button" class="btn btn-ghost btn-sm" hidden>結果をコピー</button>
+      </div>
+
+      <div id="kanji-panel" class="kanji-panel" hidden></div>
+      <div id="results" class="results"></div>
+    </section>
+
+    <!-- ============ 出典 ============ -->
+    <footer class="attribution">
+      <p>
+        辞書データ: <a href="https://github.com/scriptin/jmdict-simplified" target="_blank" rel="noopener noreferrer">JMdict / Kanjidic (EDRDG)</a>
+        — ライセンス <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>。
+        このアプリはデータを改変して表示する場合があります。検索語は外部へ送信しません。
+      </p>
+    </footer>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+
+  <script src="../../shared/header.js"
+    data-app-name="オフライン辞書"
+    data-app-icon="book-open"
+    data-app-color="#6366f1"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
