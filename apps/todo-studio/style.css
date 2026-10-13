@@ -1,0 +1,506 @@
+/* ==========================================================
+   ToDo スタジオ — アプリ固有スタイル
+   ========================================================== */
+
+:root {
+  --app-color: #0d9488;
+  --due-overdue: #dc2626;
+  --due-today: #ea580c;
+  --due-tomorrow: #d97706;
+  --due-normal: #64748b;
+}
+
+[data-theme="dark"] {
+  --due-overdue: #f87171;
+  --due-today: #fb923c;
+  --due-tomorrow: #fbbf24;
+  --due-normal: #94a3b8;
+}
+
+.app-main {
+  max-width: var(--w-page);
+  margin: 0 auto;
+  padding: calc(var(--sp-16) + var(--sp-2)) var(--sp-4) var(--sp-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.card {
+  background: var(--c-surface-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+/* ---------- 見出し ---------- */
+
+.app-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.app-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+.app-subtitle {
+  margin-top: var(--sp-1);
+  max-width: 60ch;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+}
+.heading-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.status-line {
+  min-height: 1.2em;
+  font-size: var(--text-sm);
+  color: var(--app-color);
+  font-weight: 600;
+}
+
+/* ---------- ボタン ---------- */
+
+.btn {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.btn:active {
+  transform: translateY(0);
+}
+.btn-primary {
+  color: #fff;
+  background: var(--app-color);
+  border-color: transparent;
+}
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--app-color) 88%, #000);
+}
+.btn-secondary {
+  background: var(--c-surface-solid);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--c-border);
+}
+.btn-sm {
+  font-size: var(--text-xs);
+  padding: 4px var(--sp-3);
+}
+.btn-icon {
+  font-family: var(--font);
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-2);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+.btn-icon:hover {
+  color: var(--app-color);
+  border-color: var(--app-color);
+}
+.btn-icon.danger:hover,
+.btn-icon.is-confirm {
+  color: var(--c-error);
+  border-color: var(--c-error);
+}
+.btn:focus-visible,
+.btn-icon:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+.file-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---------- フォーム ---------- */
+
+.form-card {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+}
+.field-wide {
+  grid-column: 1 / -1;
+}
+.field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.field input,
+.field select,
+.field textarea {
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  color: var(--c-text);
+  background: var(--c-surface-solid);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  padding: 6px var(--sp-2);
+  width: 100%;
+}
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.form-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* ---------- レイアウト ---------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+.panel-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+.hint {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  line-height: 1.5;
+}
+.side-note {
+  margin-top: var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  line-height: 1.5;
+}
+
+/* ---------- ビュー / 絞り込み ---------- */
+
+.filters,
+.options-card,
+.io-card {
+  padding: var(--sp-4);
+}
+.filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  color: var(--c-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  text-align: left;
+}
+.filter-btn:hover {
+  background: var(--c-surface-alt);
+}
+.filter-btn.is-active {
+  background: color-mix(in srgb, var(--app-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--app-color) 40%, transparent);
+  font-weight: 700;
+}
+.filter-btn .count {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  background: var(--c-surface-alt);
+  border-radius: var(--r-full);
+  padding: 0 var(--sp-2);
+  min-width: 1.6em;
+  text-align: center;
+}
+.filter-btn.is-active .count {
+  color: #fff;
+  background: var(--app-color);
+}
+.options-card .field-block,
+.io-card .field-block {
+  margin-bottom: var(--sp-2);
+}
+.io-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-2);
+}
+.io-card textarea {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* ---------- メイン ---------- */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.task-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-surface-card);
+  border: 1px solid var(--c-border);
+  border-left: 4px solid var(--due-normal);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+}
+.task-item.is-overdue {
+  border-left-color: var(--due-overdue);
+}
+.task-item.is-today {
+  border-left-color: var(--due-today);
+}
+.task-item.is-tomorrow {
+  border-left-color: var(--due-tomorrow);
+}
+.task-item.is-done {
+  opacity: 0.62;
+}
+.task-item.is-done .task-title {
+  text-decoration: line-through;
+}
+.task-check {
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+.task-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--app-color);
+  cursor: pointer;
+}
+.task-body {
+  min-width: 0;
+}
+.task-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  word-break: break-word;
+}
+.task-notes {
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.task-meta {
+  margin-top: var(--sp-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  align-items: center;
+}
+.due {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--due-normal);
+}
+.due-hot {
+  color: var(--due-today);
+}
+.due-overdue {
+  color: var(--due-overdue);
+}
+.chip {
+  font-size: var(--text-xs);
+  color: var(--c-text-2);
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-full);
+  padding: 1px var(--sp-2);
+}
+.chip.tag {
+  color: var(--app-color);
+  border-color: color-mix(in srgb, var(--app-color) 35%, transparent);
+  background: color-mix(in srgb, var(--app-color) 8%, transparent);
+}
+.chip.prio {
+  color: var(--c-warning);
+  border-color: color-mix(in srgb, var(--c-warning) 35%, transparent);
+}
+.chip.source {
+  color: var(--c-info);
+}
+.task-actions {
+  display: flex;
+  gap: var(--sp-1);
+}
+.empty-state {
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+  color: var(--c-text-3);
+  background: var(--c-surface-card);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-lg);
+}
+
+/* ---------- カンバン ---------- */
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  align-items: start;
+}
+.kanban-col {
+  background: var(--c-surface-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
+  min-height: 120px;
+}
+.kanban-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.kanban-head .count {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+}
+.kanban-hint {
+  font-size: var(--text-xs);
+  color: var(--c-text-3);
+  margin-bottom: var(--sp-2);
+}
+.kanban-list {
+  margin-top: var(--sp-2);
+}
+.kanban-list .task-item {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.kanban-list .task-actions {
+  grid-column: 2;
+}
+
+/* ---------- ヘルプ ---------- */
+
+.help {
+  padding: var(--sp-4);
+  font-size: var(--text-sm);
+  color: var(--c-text-2);
+}
+.help summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.help ul {
+  margin-top: var(--sp-2);
+  padding-left: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.help code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--c-surface-alt);
+  padding: 1px 4px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- レスポンシブ ---------- */
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .kanban {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .filter-btn,
+  .task-item {
+    transition: none;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "todo-studio",
+  "name": "ToDo スタジオ",
+  "description": "締切つきのタスクをブラウザ内で管理。今日/今週/期限切れのビュー、タグ・プロジェクト、優先度、繰り返し、VTODO/ICS の入出力に対応。データは送信しません。",
+  "icon": "list-todo",
+  "color": "#0d9488",
+  "tags": ["タスク", "ToDo", "締切", "学務", "ICS", "VTODO"],
+  "net": {
+    "hosts": ["cdn.jsdelivr.net"],
+    "userSupplied": ["icsUrl"],
+    "note": "ical.js (jsdelivr, 版固定) の読み込みと、ユーザーが入力した ICS 購読 URL への GET のみ。タスクは localStorage にのみ保存し、第三者サービス・解析・テレメトリへは送信しない。"
+  }
+}
