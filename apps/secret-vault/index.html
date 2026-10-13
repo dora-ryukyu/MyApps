@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>シークレット・ボルト — MyApps</title>
+  <meta name="description" content="ログイン情報・APIキー・2FA を端末内で暗号化保管。マスターパスフレーズ + AES-GCM、検索・TOTP・自動ロックに対応。送信なし。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('myapps-theme') || 'system');
+  </script>
+  <!-- otplib (TOTP) は jsDelivr から固定版を SRI 付きで取得する。秘密は送信しない。 -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/otplib@13.5.0/dist/index.global.js"
+    integrity="sha384-gXDyKHSaC8l6urmtCZJciLDDC1vp+HolHcB9sH4nf6HFEfcEn2ofozlGqiNcf8qL"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+</head>
+<body>
+  <main class="app-container">
+    <div id="error-box" class="error-box" role="alert" hidden></div>
+
+    <!-- ============ ロック解除 ============ -->
+    <section id="lock-view" class="lock-view">
+      <div class="lock-card card">
+        <div class="lock-icon" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/>
+            <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>
+          </svg>
+        </div>
+        <h1 id="lock-title" class="lock-title">ボルトを解錠</h1>
+        <p id="lock-desc" class="lock-desc">
+          マスターパスフレーズを入力してください。パスフレーズは端末外へ送信されません。
+        </p>
+
+        <form id="lock-form" class="lock-form" autocomplete="off">
+          <label class="field">
+            <span>マスターパスフレーズ</span>
+            <input id="passphrase" type="password" autocomplete="current-password" placeholder="8 文字以上" />
+          </label>
+          <label class="field" id="passphrase-confirm-wrap" hidden>
+            <span>マスターパスフレーズ（確認）</span>
+            <input id="passphrase-confirm" type="password" autocomplete="new-password" />
+          </label>
+          <p class="hint">
+            パスフレーズを忘れると復元できません。復元用の控えを別の場所に保管してください。
+          </p>
+          <button id="lock-submit" type="submit" class="btn btn-primary btn-block">解錠</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ ボルト本体 ============ -->
+    <section id="vault-view" class="vault-view" hidden>
+      <div class="app-heading">
+        <div>
+          <h1 class="app-title">シークレット・ボルト</h1>
+          <p class="app-subtitle">
+            ログイン情報・APIキー・2FA を <strong>AES-GCM</strong> で端末内に暗号化保管します。
+            検索・タグ・TOTP・自動ロックに対応。<span class="muted">送信なし。</span>
+          </p>
+        </div>
+        <div class="heading-actions">
+          <span id="lock-countdown" class="lock-countdown" title="自動ロックまでの残り時間"></span>
+          <button id="settings-btn" type="button" class="btn btn-ghost btn-sm">設定</button>
+          <button id="lock-btn" type="button" class="btn btn-secondary btn-sm">ロック</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search-input" type="search" placeholder="サイト名・ユーザー名・メモ・タグで検索" />
+        </div>
+        <button id="new-entry-btn" type="button" class="btn btn-primary">+ 新規エントリ</button>
+      </div>
+
+      <div id="tag-filter" class="tag-filter" aria-label="タグで絞り込み"></div>
+
+      <div class="vault-grid">
+        <div class="list-pane">
+          <ul id="entry-list" class="entry-list"></ul>
+          <p id="entry-empty" class="empty-note" hidden>エントリがありません。「+ 新規エントリ」から追加できます。</p>
+        </div>
+
+        <div class="editor-pane">
+          <div id="editor-empty" class="editor-empty">
+            <p>左の一覧からエントリを選ぶか、新規追加してください。</p>
+          </div>
+
+          <form id="entry-form" class="entry-form" hidden autocomplete="off">
+            <div class="editor-head">
+              <h2 id="editor-heading" class="panel-title">新規エントリ</h2>
+              <button id="cancel-entry-btn" type="button" class="btn btn-ghost btn-sm">閉じる</button>
+            </div>
+
+            <label class="field">
+              <span>サイト名・タイトル</span>
+              <input id="field-title" type="text" placeholder="例: GitHub" />
+            </label>
+
+            <div class="field-row">
+              <label class="field">
+                <span>ユーザー名・メール</span>
+                <input id="field-username" type="text" placeholder="例: user@example.com" />
+              </label>
+              <label class="field">
+                <span>URL</span>
+                <input id="field-url" type="url" placeholder="https://" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>パスワード</span>
+              <div class="password-row">
+                <input id="field-password" type="password" autocomplete="new-password" />
+                <button id="toggle-password" type="button" class="btn btn-ghost btn-sm" title="表示/非表示">表示</button>
+                <button id="generate-password" type="button" class="btn btn-secondary btn-sm">生成</button>
+                <button id="copy-password" type="button" class="btn btn-ghost btn-sm">コピー</button>
+              </div>
+            </label>
+
+            <details id="generator" class="generator">
+              <summary>パスワード生成オプション</summary>
+              <div class="generator-grid">
+                <label class="field">
+                  <span>長さ: <strong id="gen-length-label">20</strong></span>
+                  <input id="gen-length" type="range" min="4" max="64" value="20" />
+                </label>
+                <div class="gen-checks">
+                  <label class="checkbox-field"><input id="gen-upper" type="checkbox" checked /><span>英大文字</span></label>
+                  <label class="checkbox-field"><input id="gen-lower" type="checkbox" checked /><span>英小文字</span></label>
+                  <label class="checkbox-field"><input id="gen-digits" type="checkbox" checked /><span>数字</span></label>
+                  <label class="checkbox-field"><input id="gen-symbols" type="checkbox" checked /><span>記号</span></label>
+                  <label class="checkbox-field"><input id="gen-ambiguous" type="checkbox" /><span>紛らわしい文字を除外</span></label>
+                </div>
+                <div class="gen-result">
+                  <code id="gen-preview" class="gen-preview"></code>
+                  <span id="gen-strength" class="gen-strength"></span>
+                  <button id="gen-use" type="button" class="btn btn-secondary btn-sm">このパスワードを使う</button>
+                </div>
+              </div>
+            </details>
+
+            <label class="field">
+              <span>TOTP シークレット (Base32) または otpauth:// URI</span>
+              <input id="field-totp" type="text" placeholder="JBSWY3DPEHPK3PXP..." />
+            </label>
+
+            <div id="totp-panel" class="totp-panel" hidden>
+              <div class="totp-code" id="totp-code">------</div>
+              <div class="totp-meta">
+                <span id="totp-remaining">-- 秒</span>
+                <button id="totp-copy" type="button" class="btn btn-ghost btn-sm">コピー</button>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>タグ（カンマ区切り）</span>
+              <input id="field-tags" type="text" placeholder="例: 開発, 銀行" />
+            </label>
+
+            <label class="field">
+              <span>メモ</span>
+              <textarea id="field-notes" rows="3" placeholder="復元コード・補足など"></textarea>
+            </label>
+
+            <div class="editor-actions">
+              <button id="save-entry-btn" type="submit" class="btn btn-primary">保存</button>
+              <button id="delete-entry-btn" type="button" class="btn btn-danger">削除</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="io-bar">
+        <div class="io-group">
+          <span class="io-label">書き出し</span>
+          <button id="export-json-btn" type="button" class="btn btn-secondary btn-sm">暗号化 JSON</button>
+          <button id="export-age-btn" type="button" class="btn btn-secondary btn-sm">age (.age)</button>
+        </div>
+        <div class="io-group">
+          <span class="io-label">読み込み</span>
+          <label class="btn btn-secondary btn-sm">
+            ファイルを選択
+            <input id="import-file" type="file" accept=".json,.age,.txt,application/json" hidden />
+          </label>
+        </div>
+        <span id="clipboard-status" class="clipboard-status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <p class="about-note">
+      暗号化は WebCrypto の <code>PBKDF2-SHA256</code> と <code>AES-GCM</code> で行い、
+      秘密は <strong>端末内の localStorage に暗号文としてのみ</strong>保存されます。
+      書き出した <code>.age</code> は暗号化ボルト (<code>crypto-vault</code>) や
+      <code>age</code> CLI と相互運用できます。TOTP は
+      <a href="https://github.com/yeojz/otplib" target="_blank" rel="noopener noreferrer">otplib</a> (MIT) を使用します。
+    </p>
+  </main>
+
+  <!-- ============ 設定モーダル ============ -->
+  <div id="settings-modal" class="settings-overlay" aria-hidden="true">
+    <div class="settings-content card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="settings-head">
+        <h2 id="settings-title" class="panel-title">設定</h2>
+        <button id="settings-close" type="button" class="btn btn-ghost btn-sm">閉じる</button>
+      </div>
+      <label class="field">
+        <span>自動ロックまでの時間（秒）</span>
+        <input id="lock-seconds" type="number" min="30" max="3600" step="30" />
+      </label>
+      <label class="field">
+        <span>コピー後にクリップボードを消すまでの時間（秒）</span>
+        <input id="clipboard-seconds" type="number" min="5" max="600" step="5" />
+      </label>
+      <label class="field">
+        <span>鍵導出の反復回数（PBKDF2、新規保存時に適用）</span>
+        <input id="iterations-input" type="number" min="100000" max="2000000" step="50000" />
+      </label>
+      <button id="settings-save" type="button" class="btn btn-primary btn-block">保存</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="vendor/age.js"></script>
+  <script src="../../shared/header.js"
+    data-app-name="シークレット・ボルト"
+    data-app-icon="key-round"
+    data-app-color="#14b8a6"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
