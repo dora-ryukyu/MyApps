@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>音楽ライブラリ — Music Library</title>
+  <meta name="description" content="フォルダ内の音源のタグを一覧・検索・編集し、プレイリストを作って M3U で書き出します。音源は端末の外へ送信しません。" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- 共通デザイン -->
+  <link rel="stylesheet" href="../../shared/base.css" />
+  <link rel="stylesheet" href="../../shared/header.css" />
+
+  <!-- アプリ固有スタイル -->
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    document.documentElement.setAttribute(
+      "data-theme",
+      localStorage.getItem("myapps-theme") || "system"
+    );
+  </script>
+</head>
+<body>
+  <main class="app-container">
+    <div class="app-heading">
+      <div>
+        <h1 class="app-title">音楽ライブラリ</h1>
+        <p class="app-subtitle">
+          フォルダ内の音源を走査してタグ（タイトル・アーティスト・アルバム・ジャンルなど）を一覧表示し、
+          検索・並べ替え・編集・再生・プレイリスト化ができます。MP3 はタグを書き換えて保存できます。
+          音源とタグは端末の外へ送信されません。
+        </p>
+      </div>
+      <button id="info-btn" class="btn btn-ghost" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>このアプリについて</span>
+      </button>
+    </div>
+
+    <div id="scan-error" class="error-box" role="alert" hidden></div>
+
+    <!-- フォルダ選択 -->
+    <section id="scan-panel" class="panel card">
+      <div class="panel-head">
+        <h2 class="panel-title">1. 音源フォルダを選ぶ</h2>
+        <button id="clear-library-btn" class="btn btn-ghost btn-sm" type="button">ライブラリを空にする</button>
+      </div>
+      <div class="scan-actions">
+        <button id="scan-dir-btn" class="btn btn-primary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          <span>フォルダを選ぶ</span>
+        </button>
+        <button id="scan-files-btn" class="btn btn-secondary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+          <span>ファイルを選ぶ</span>
+        </button>
+        <span id="scan-status" class="hint" aria-live="polite">音源が選ばれていません。</span>
+      </div>
+      <div id="scan-progress" class="progress-block" hidden>
+        <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      </div>
+      <p class="hint">
+        対応形式: MP3 / M4A / FLAC / Ogg / Opus / WAV / AIFF など。タグの書き込みは MP3 のみ、他は読み取り専用です。
+      </p>
+      <input id="dir-input" type="file" webkitdirectory multiple hidden />
+      <input id="files-input" type="file" accept="audio/*,.mp3,.m4a,.flac,.ogg,.opus,.wav,.aiff,.aif,.wma,.ape,.wv,.mp4" multiple hidden />
+    </section>
+
+    <!-- ライブラリと詳細 -->
+    <div id="library-section" class="layout-grid" hidden>
+      <section class="panel card library-pane">
+        <div class="library-toolbar">
+          <div class="search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="search-input" type="search" placeholder="タイトル / アーティスト / アルバム / ファイル名で検索" autocomplete="off" />
+          </div>
+          <label class="field field-inline" for="sort-select">
+            <span>並べ替え</span>
+            <select id="sort-select"></select>
+          </label>
+          <button id="sort-dir-btn" class="btn btn-ghost btn-sm" type="button" aria-label="昇順 / 降順を切り替え">昇順 ↑</button>
+          <label class="field field-inline" for="genre-filter-select">
+            <span>ジャンル</span>
+            <select id="genre-filter-select"><option value="">すべて</option></select>
+          </label>
+        </div>
+
+        <p id="library-stats" class="hint" aria-live="polite"></p>
+
+        <div class="table-wrap">
+          <table class="track-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">タイトル</th>
+                <th scope="col">アーティスト</th>
+                <th scope="col">アルバム</th>
+                <th scope="col">ジャンル</th>
+                <th scope="col">年</th>
+                <th scope="col" class="num">長さ</th>
+                <th scope="col" class="num">形式</th>
+              </tr>
+            </thead>
+            <tbody id="track-rows"></tbody>
+          </table>
+          <p id="track-count" class="hint"></p>
+        </div>
+      </section>
+
+      <section id="detail-pane" class="panel card detail-pane" hidden>
+        <div class="detail-head">
+          <div class="cover-frame">
+            <img id="cover-img" alt="" hidden />
+            <div id="cover-placeholder" class="cover-placeholder" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+          </div>
+          <div>
+            <h2 class="panel-title">2. タグを編集する</h2>
+            <p id="detail-title" class="detail-title"></p>
+            <p id="detail-meta" class="hint"></p>
+          </div>
+        </div>
+
+        <form class="tag-form" onsubmit="return false">
+          <label class="field" for="edit-title"><span>タイトル</span><input id="edit-title" type="text" autocomplete="off" /></label>
+          <label class="field" for="edit-artist"><span>アーティスト</span><input id="edit-artist" type="text" autocomplete="off" /></label>
+          <label class="field" for="edit-album"><span>アルバム</span><input id="edit-album" type="text" autocomplete="off" /></label>
+          <label class="field" for="edit-album-artist"><span>アルバムアーティスト</span><input id="edit-album-artist" type="text" autocomplete="off" /></label>
+          <div class="field-row">
+            <label class="field" for="edit-track"><span>トラック</span><input id="edit-track" type="number" min="0" step="1" inputmode="numeric" /></label>
+            <label class="field" for="edit-track-total"><span>/ 総数</span><input id="edit-track-total" type="number" min="0" step="1" inputmode="numeric" /></label>
+          </div>
+          <div class="field-row">
+            <label class="field" for="edit-disc"><span>ディスク</span><input id="edit-disc" type="number" min="0" step="1" inputmode="numeric" /></label>
+            <label class="field" for="edit-disc-total"><span>/ 総数</span><input id="edit-disc-total" type="number" min="0" step="1" inputmode="numeric" /></label>
+          </div>
+          <div class="field-row">
+            <label class="field" for="edit-year"><span>年</span><input id="edit-year" type="number" min="0" step="1" inputmode="numeric" /></label>
+            <label class="field" for="edit-genre"><span>ジャンル</span><input id="edit-genre" type="text" autocomplete="off" /></label>
+          </div>
+          <label class="field" for="edit-composer"><span>作曲者</span><input id="edit-composer" type="text" autocomplete="off" /></label>
+          <label class="field" for="edit-comment"><span>コメント</span><input id="edit-comment" type="text" autocomplete="off" /></label>
+        </form>
+
+        <div id="tag-diff" class="tag-diff" hidden></div>
+        <p id="write-status" class="hint" aria-live="polite"></p>
+
+        <div class="action-row">
+          <button id="apply-tags-btn" class="btn btn-primary" type="button">変更を反映</button>
+          <button id="revert-tags-btn" class="btn btn-secondary" type="button">編集を戻す</button>
+          <button id="save-file-btn" class="btn btn-secondary" type="button">タグを保存（MP3）</button>
+          <button id="download-tags-btn" class="btn btn-ghost" type="button">タグ付きをダウンロード</button>
+        </div>
+        <p class="hint">「保存」は対応ブラウザ（Chromium 系）でフォルダを選んだ場合のみ直接上書きします。それ以外はダウンロードになります。</p>
+      </section>
+    </div>
+
+    <!-- プレイリスト -->
+    <section id="playlist-panel" class="panel card" hidden>
+      <div class="panel-head">
+        <h2 class="panel-title">3. プレイリスト</h2>
+        <div class="playlist-toolbar">
+          <label class="field field-inline" for="playlist-select"><span>プレイリスト</span>
+            <select id="playlist-select"></select>
+          </label>
+          <button id="playlist-new-btn" class="btn btn-ghost btn-sm" type="button">新規</button>
+          <button id="playlist-rename-btn" class="btn btn-ghost btn-sm" type="button">名前変更</button>
+          <button id="playlist-delete-btn" class="btn btn-ghost btn-sm" type="button">削除</button>
+        </div>
+      </div>
+
+      <div class="playlist-actions">
+        <button id="playlist-add-selected-btn" class="btn btn-secondary btn-sm" type="button">選択中の曲を追加</button>
+        <button id="playlist-add-all-btn" class="btn btn-secondary btn-sm" type="button">表示中の曲をすべて追加</button>
+        <button id="playlist-clear-btn" class="btn btn-ghost btn-sm" type="button">クリア</button>
+        <button id="m3u-import-btn" class="btn btn-ghost btn-sm" type="button">M3U を読み込む</button>
+        <button id="m3u-export-btn" class="btn btn-secondary btn-sm" type="button">M3U を書き出す</button>
+        <button id="m3u8-export-btn" class="btn btn-secondary btn-sm" type="button">M3U8（UTF-8）を書き出す</button>
+      </div>
+
+      <label class="field field-inline pattern-field" for="pattern-preset-select">
+        <span>書き出し名のパターン</span>
+        <select id="pattern-preset-select"></select>
+      </label>
+      <label class="field" for="pattern-input">
+        <span>パターン（{title} {artist} {album} {track} {num} {disc} {year} {genre}）</span>
+        <input id="pattern-input" type="text" autocomplete="off" />
+      </label>
+      <p id="pattern-preview" class="hint" aria-live="polite"></p>
+
+      <ul id="playlist-items" class="playlist-items"></ul>
+      <p id="playlist-stats" class="hint"></p>
+      <input id="m3u-input" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,audio/mpegurl" hidden />
+    </section>
+  </main>
+
+  <!-- 音声要素（Web Audio の MediaElementSource 経由で再生） -->
+  <audio id="audio" preload="metadata"></audio>
+
+  <!-- プレイヤーバー -->
+  <div id="player-bar" class="player-bar" hidden>
+    <div class="player-now">
+      <img id="now-cover" class="now-cover" alt="" hidden />
+      <div class="now-text">
+        <span id="now-title" class="now-title">—</span>
+        <span id="now-artist" class="now-artist"></span>
+      </div>
+    </div>
+    <div class="player-controls">
+      <button id="prev-btn" class="btn btn-icon" type="button" aria-label="前へ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <button id="play-pause-btn" class="btn btn-primary btn-icon" type="button" aria-label="再生 / 一時停止">
+        <svg data-play-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        <svg data-pause-icon xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true" hidden><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>
+      </button>
+      <button id="next-btn" class="btn btn-icon" type="button" aria-label="次へ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+    </div>
+    <div class="player-seek">
+      <span id="time-current" class="time">0:00</span>
+      <input id="seek-range" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" />
+      <span id="time-total" class="time">0:00</span>
+    </div>
+    <div class="player-extra">
+      <button id="shuffle-btn" class="btn btn-ghost btn-sm" type="button" aria-pressed="false">シャッフル</button>
+      <label class="field field-inline" for="repeat-select">
+        <span>リピート</span>
+        <select id="repeat-select">
+          <option value="off">オフ</option>
+          <option value="all">全曲</option>
+          <option value="one">1曲</option>
+        </select>
+      </label>
+      <input id="volume-range" type="range" min="0" max="100" value="100" step="1" aria-label="音量" />
+    </div>
+  </div>
+
+  <!-- Info モーダル -->
+  <div id="info-modal" class="modal-backdrop" hidden>
+    <div class="modal-content card">
+      <button id="close-info-btn" class="modal-close" type="button" aria-label="閉じる">&times;</button>
+      <h2>音楽ライブラリについて</h2>
+      <p>
+        手元の音源フォルダをその場で読み取り、タグを一覧・検索・編集できるようにします。音源もタグも
+        サーバーへは送信されません。解析ライブラリ（music-metadata）と ID3 書き込み（browser-id3-writer）
+        だけを CDN から読み込みます。
+      </p>
+      <h3>使い方</h3>
+      <ol>
+        <li>「フォルダを選ぶ」で音源フォルダを選ぶと、再帰的に走査してタグを読み取ります。</li>
+        <li>一覧の行を選ぶと右側でタグを編集できます。「変更を反映」で一覧に反映、「タグを保存」でファイルに書き込みます（MP3 のみ）。</li>
+        <li>プレイリストに曲を追加し、M3U / M3U8 で書き出せます。</li>
+      </ol>
+      <h3>できること / できないこと</h3>
+      <ul>
+        <li>タグの書き込みは MP3（ID3v2.3）のみ。FLAC / Ogg / MP4 などは読み取り専用です。</li>
+        <li>フォルダ選択（File System Access API）は Chromium 系のみ。Firefox ではファイル選択 + ダウンロードになります。</li>
+        <li>タグを含むライブラリ情報は IndexedDB に保存します。次回起動時はファイルを選び直すと再生できます。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script
+    src="../../shared/header.js"
+    data-app-name="音楽ライブラリ"
+    data-app-icon="music"
+    data-app-color="#0ea5e9"
+  ></script>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
